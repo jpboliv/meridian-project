@@ -4,6 +4,16 @@
 
 Each specialist reports what they found and where they found it. If they disagree, the agent leading the investigation asks for more evidence before anyone changes the system.
 
-Draft for [issue 10](https://github.com/jpboliv/meridian-agents/issues/10). Two specialists report different causes. What evidence must the orchestrator request before it sends a remediation task?
+Draft for owner review · [Issue 10](https://github.com/jpboliv/meridian-agents/issues/10).
 
-Define the task, result, uncertainty, constraints, and evidence references. Include a missing or invalid result and a limit on follow-up requests.
+The lead agent owns the incident, combines findings, and reports to the operator. The infrastructure specialist reads instance and link measurements. The application specialist reads change records, tickets, and service logs. Specialists can read within the caller's scope. Neither can approve actions, dispatch changes, or write shared lessons.
+
+Each task carries a task ID, incident ID, caller scope, target, question, allowed reads, deadline, and remaining budget. Each result returns the task ID, finding, source IDs and times, limitations, and suggested next read. Accept statuses `found`, `no_evidence`, or `blocked`. A result with an unknown source, wrong task ID, or missing target cannot support an action.
+
+The lead agent can request both specialties in one round. Keep source timestamps on the replies. If two tool calls advance the simulator, record their actual order. Do not describe sequential readings as simultaneous.
+
+For example, infrastructure sees a slow database link. Application finds a recent deployment but no evidence that it caused the delay. The lead asks for one observation that separates those explanations. A majority vote or two copies of the same alert add no evidence.
+
+Allow one follow-up across both specialists for a missing, conflicting, timed-out, or invalid finding. A format repair counts as that follow-up. If the remaining evidence supports a decision, the lead can proceed within its authority. Otherwise use the same operator handoff as the single agent. A missing reply never means “healthy.”
+
+Only the lead sends an authorized intent to the executor. It obtains fresh readings after the effect and cites them in the final report. The comparison counts the specialists' calls and tokens against the same shift budget as the single agent.

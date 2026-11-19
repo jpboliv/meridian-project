@@ -13,13 +13,15 @@ Start with the [project goals](docs/project.md) and [reference incident](docs/re
 
 ## Design index
 
-Each specification includes a diagram. To refresh the diagrams and offline decision report, install Graphviz and run this command from the repository root:
+Read the [review introduction](docs/design-review.md) on GitHub, or open `docs/decision-report.html` in a browser after cloning the repository. The HTML file contains the complete report and its diagrams. Reading it needs no setup.
+
+The introduction and the specifications below contain the editable text. To rebuild the HTML after an edit, run this from the repository root:
 
 ```sh
-python3 projects/course-02-agentic-ai/docs/flows/render.py
+uv run --locked python projects/course-02-agentic-ai/docs/render_report.py
 ```
 
-Open `../meridian-report/index.html`. Edit `docs/flows/flows.dot` to change a diagram and the corresponding specification to change its caption.
+The [course references](references/) contain the project brief and the first session's slides. The [issue snapshot](docs/issue-snapshot.md) preserves the decisions and discussions from the [course fork's tracker](https://github.com/jpboliv/meridian-agents/issues).
 
 - [Architecture and information ownership](docs/architecture.md)
 - [Prompts](docs/specs/prompts.md) and [context](docs/specs/context.md)
