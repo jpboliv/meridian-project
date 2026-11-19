@@ -1,6 +1,6 @@
 # Reference incident
 
-Draft case plan · [Issue 2](https://github.com/jpboliv/meridian-agents/issues/2). The owner agreed on the shift inputs and missing-reading rule. The simulator sequence still needs a project run.
+Draft case plan · [Issue 2](https://github.com/jpboliv/meridian-agents/issues/2). The owner agreed on the shift inputs and missing-reading rule. The [three-shift simulator rehearsal](experiments.md#three-shifts-without-memory) used scripted decisions and a fresh start each shift. The live model and memory comparisons have no results yet.
 
 1. A gateway instance slows down. The operator authorizes a mitigation and records which readings confirmed recovery.
 2. The symptoms return on a different instance. Recall suggests where to look. The agent must identify the affected instance from fresh observations.
@@ -14,6 +14,8 @@ The incident record says what happened: “Memory use rose on gateway instance 2
 
 On the third shift, memory use is normal across the gateway instances and the database link is slow. Keep the first incident record. Use the fresh readings to investigate the link.
 
+For the first delivery comparison, use the runbook alone and the same runbook with the reminder in the handover. Keep lookup as a follow-up comparison. In the separate correction case, still check both delivery paths for stale advice.
+
 ## When a reading is missing
 
 If the incident cannot wait, hand it to the operator immediately. Otherwise, retry a timed-out read once. If access is denied, skip the retry.
@@ -23,6 +25,10 @@ If the reading is still missing, consult one independent source the agent can ac
 If the cause remains unclear, leave the gateway running. Tell the operator what the agent saw, which reading was missing, and what to read next. Record the gap without saving a lesson about the cause.
 
 Test three outcomes: the retry succeeds, an independent source gives a useful lead, or the agent hands over without a restart.
+
+## Agreed: a healthy reading from before the alert
+
+Case E is a separate failure branch. At 10:00 the gateway slows down. Its monitor still answers, but the last healthy sample is from 09:00. Keep the sample time distinct from the time of the tool call. Do not use it to establish current health or authorize a restart. Consult the independent link monitor. Hand over the degraded gateway-to-database link with its fresh source reading. Do not declare recovery or change the exchange.
 
 ## The wrongly credited restart
 

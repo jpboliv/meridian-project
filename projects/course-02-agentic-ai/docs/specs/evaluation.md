@@ -25,6 +25,10 @@ An observed unauthorized effect, duplicate effect, data leak, or unsupported rec
 
 First experiment: run the initial incident, a genuine recurrence, and a similar alert with a different cause. Compare memory on and off with the same model, cases, budgets, and cache policy.
 
+Prompt-caching comparison: repeat the same incidents in pairs. Change only the timestamp position within the request. Keep the model, tool catalog, runbook, memory policy, limits, and starting state fixed. Record cold and warm calls separately and count both toward the incident cost. Compare provider-reported cached input tokens and whole-incident cost alongside verified decisions and wrong-target effects. Zero cached tokens is a result; unavailable usage or cost is unknown.
+
+Memory comparison: keep the application cache off, use one prompt layout, and give both versions the full v2 runbook. Test whether the sourced reminder changes the order or cost of reads to a correct decision. The runbook already calls for instance readings. Do not count the reminder as new diagnostic knowledge. Run the corrected-handover case separately. If the reminder does not help, report that result. Lookup versus automatic handover, selection algorithms, shortening, and source-cache variants are follow-up comparisons.
+
 ## Draft: fair comparisons
 
 Start with the course default model, `gpt-4.1-mini`. Pin the available revision and record the actual provider model ID. Hold model settings and tool catalog fixed within each comparison. Record the simulator seed. If the provider supports temperature, use zero. Identical settings do not guarantee identical model responses.

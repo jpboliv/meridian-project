@@ -1,0 +1,15 @@
+id: shift-d
+title: Gateway alert on the morning shift
+date: "2026-11-06"
+seed: 11
+start_time: "10:05"
+warmup_ticks: 15
+incident: {id: INC-4300, summary: "The order gateway is slow.", alert: latency_high/order-gateway}
+tickets:
+  - {at: 14, key: MRX-4300, component: order-gateway, summary: "INC-4300: slow order acknowledgements"}
+  - {at: 14, key: MRX-4301, component: order-gateway, summary: "New operator access request"}
+changes:
+  - {at: 1, change_id: CHG-5100, component: order-gateway, kind: deploy, description: "Gateway patch", version_before: "2.4.0", version_after: "2.4.1"}
+faults:
+  - {type: link, at: 2, source: order-gateway, target: reference-db, mode: degraded, extra_latency_ms: 185}
+approver: {approve_roles: [on-call]}

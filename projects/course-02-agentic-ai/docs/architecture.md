@@ -24,6 +24,8 @@ One simulator tick is one simulated minute. Tools advance the clock according to
 
 ## Tool boundary
 
+The course simulator is the starting point. Add project tools to expose observations an operator could obtain. Change the simulator itself when a case needs behavior it cannot represent. Keep the injected cause and expected decision with the evaluator. For the timestamp comparison, run both layouts against the same simulator revision and tool catalog so that only the layout changes.
+
 Use the Session 3 MCP integration against the same simulator as the executor. Pin the allowed server, publisher, tool revision, input fields, and reader scope. The investigator can use `tickets.search_issues`, `monitoring.get_instance_datapoints`, and `deployments.list_deployments`. A changed or unknown tool definition stays out until review.
 
 Code accepts a reading only if its fields match the contract. Preserve the distinction between an instance value and a fleet average. Add the observation time and source reference from the call record when the source omits them. Reject a payload that names another target or cannot support the requested reading. Treat it as missing evidence.

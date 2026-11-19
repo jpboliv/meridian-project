@@ -1,0 +1,14 @@
+id: shift-b
+title: Gateway alert on the morning shift
+seed: 11
+start_time: "10:05"
+warmup_ticks: 15
+incident: {id: INC-4100, summary: "The order gateway is slow.", alert: latency_high/order-gateway}
+tickets:
+  - {at: 14, key: MRX-4100, component: order-gateway, summary: "INC-4100: slow order acknowledgements"}
+  - {at: 14, key: MRX-4101, component: order-gateway, summary: "New operator access request"}
+faults:
+  - {type: resource, at: 2, instance: order-gateway-2, resource: memory, start_value: 93, rate: 0.05}
+approver: {approve_roles: [on-call]}
+tools:
+  monitoring.get_instance_datapoints: {fail_calls: [1, 2]}

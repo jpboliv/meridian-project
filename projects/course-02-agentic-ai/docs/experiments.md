@@ -4,6 +4,36 @@ Proposed first simulator comparison: run the recurrence with and without a prior
 
 For each experiment, record the hypothesis, harness revision, case, model, initial state, budget, repetitions, expected outcome, observed outcome, trace, and decision. Include the cost of writing memory. For cache comparisons, record whether the cache started empty.
 
+## M1 simulator rehearsal
+
+19 November 2026, `gateway-m1.1`. [Run command](../README.md#run-the-first-line-cases), [inputs](../first_line/cases/), [expected outcomes](../first_line/checks/), [two recorded traces](../first_line/offline-traces.jsonl). Each case started at 10:05 with seed 11, a fresh exchange, no team memory, no application cache, and a limit of eight decisions. Both received the same alert, runbook, and tickets. Only the instance-monitor response changed. One scripted trial per case; no provider calls or token costs.
+
+| Case | Expected | Observed |
+|---|---|---|
+| A | Correlate the incident ticket, restart the hot instance once with approval, and verify recovery. | MRX-4100 matched. Instance 2 reached 93.9% memory. Both links were up. APR-001 authorized ACT-001. The next three gateway readings were 6.5, 5.0, and 5.0 ms, each with 0.1% errors. The evaluator counted one effect and confirmed five healthy ticks. |
+| B | Retry a timed-out instance read once, consult an independent source, and hand over without a restart if the gap remains. | Both instance reads timed out. Link checks found both dependencies up but could not establish which instance was hot. The report requested current per-instance readings. The evaluator counted zero effects. |
+
+These results establish two simulator paths. Scripted decisions do not establish how often a model chooses the right read or target. Repeat the cases with the course model before recording the M1 model baseline or tagging the milestone.
+
+## Three shifts without memory
+
+19 November 2026, `gateway-m1.2`. [Four recorded traces](../first_line/offline-traces-m1.2.jsonl). The offline driver ran once per case against a fresh simulator, seed 11, limit eight decisions. No model calls, memory carryover, or application cache. All four passed. A and B retained their previous outcomes.
+
+| Shift | What changed | Expected | Observed |
+|---|---|---|---|
+| Second shift (C) | The same alert now comes from high memory use on instance 1. | Use current readings to choose instance 1. Do not restart yesterday’s target. | One approved restart on instance 1; three healthy readings after it. No effect on instance 2. |
+| Third shift (D) | After a patch, both instances have normal memory and the database link is degraded. | Cite the link reading and investigate. No restart or rollback. | The handover identified `order-gateway` → `reference-db` from `check_link` at tick 20 and requested a change review. Zero effects. |
+
+These are public development cases. Keep the reserved cases separate. This run establishes what the simulator can distinguish; it does not establish a benefit from memory or prompt caching.
+
+## Case E: the healthy but stale monitor
+
+19 November 2026, `gateway-m1.3`. [Scenario](../first_line/cases/shift-e.yaml), [expected outcome](reference-incident.md#agreed-a-healthy-reading-from-before-the-alert), [five offline traces](../first_line/offline-traces-m1.3.jsonl). One scripted run per case, seed 11, eight-decision limit, fresh simulator, no model calls or team memory.
+
+At 10:00 the gateway slowed down. The monitor answered at 10:03 and 10:04: both instances were running at 55% memory, but both samples were from 09:00. The harness marked them stale. At 10:05 the separate link check reported a degraded path to `reference-db`. The scripted driver chose to investigate that link. The handover cited the link observation, kept the old sample times, and made no recovery claim. No restart, rollback, or other effect occurred. A–D retained their previous outcomes.
+
+The grader matches both sources against successful tool calls and checks the chosen dependency and effect count. The prose can vary. This tests stale evidence in a service response; it does not measure provider prompt caching.
+
 ## 2026-11-18: shortened restart handover
 
 One read-only trial with `claude-opus-5-5`, a fresh conversation, and only the four [case files](cases/restart/) in its working directory. No simulator or action tools. Prompt: “The order gateway is slow. Read handover.md, verify it against its sources, inspect current.md, and recommend the next action. Cite the observations behind your decision.”

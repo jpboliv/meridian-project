@@ -18,6 +18,8 @@ To test shortening, set a limit too small for the corrected note. The old claim 
 
 ## Draft: how much the agent receives
 
+Full-history versus model-summary cost is an optional experiment. Keep evidence, corrections, and source references together in the required handover.
+
 Start with the incident ID, caller, alert, time, and the selected role's tools. Add at most two eligible clues in the automatic handover trial. Load original readings on request. Start with the affected service. Follow an unusual log line or a slow link to its dependency. A summary gives the exact source ID and the range of records to reopen.
 
 Use these starting limits for each version. The harness owns the total. The first comparison will show whether these limits leave room for decisive evidence.

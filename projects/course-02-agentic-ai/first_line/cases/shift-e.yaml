@@ -1,0 +1,14 @@
+id: shift-e
+title: Gateway alert on the morning shift
+date: "2026-11-07"
+seed: 11
+start_time: "10:00"
+warmup_ticks: 65
+incident: {id: INC-4400, summary: "The order gateway is slow.", alert: latency_high/order-gateway}
+tickets:
+  - {at: 65, key: MRX-4400, component: order-gateway, summary: "INC-4400: slow order acknowledgements"}
+faults:
+  - {type: link, at: 65, source: order-gateway, target: reference-db, mode: degraded, extra_latency_ms: 185}
+tools:
+  metric_collector: {component: order-gateway, last_poll_tick: 5}
+approver: {approve_roles: [on-call]}

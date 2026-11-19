@@ -1,12 +1,20 @@
 # Current focus
 
-Design foundation. The [specification report](projects/course-02-agentic-ai/docs/decision-report.html) is ready for owner review. It covers design issues 1–11 and starts with the explanation for Luís. The owner delegated the remaining choices on 19 November. They are Draft until reviewed. The course platform is available through upstream revision `363abf1`. The project has no implementation baseline yet.
+First-line implementation. All five [public development cases](projects/course-02-agentic-ai/docs/experiments.md#case-e-the-healthy-but-stale-monitor) pass with scripted decisions. Case E adds a failure distinct from a timeout: the monitor successfully returns healthy samples from 09:00 for a 10:00 incident. The handover cites the fresh degraded database link and records no effects. No live-model baseline yet.
+
+Resume here (19 November): the [last offline run](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7016420416) passed five scripted cases and seven tests. The next task needs no API key: fix [case B’s grader](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7012432837) so a handover that skips the monitor fails. Then make A/C require three observed post-restart readings and make D accept an equivalent, source-backed handover. Re-run all five cases before freezing M1.
+
+Owner clarified the [reuse scope](projects/course-02-agentic-ai/docs/architecture.md#tool-boundary): new tools and cases are in scope. Extend the simulator when an experiment needs behavior it cannot currently represent.
+
+All eleven design topics have drafts. Agreement on individual rules does not approve the full contracts. The next owner review is the [baseline protocol](projects/course-02-agentic-ai/docs/specs/evaluation.md#draft-fair-comparisons): model revision, repetitions, and run limits. Then run the live baseline using the [project guide](projects/course-02-agentic-ai/README.md#run-the-first-line-cases). The timestamp-layout comparison also needs both layouts and provider cache-usage recording before it can measure reuse. Later specialist and resume contracts can be reviewed separately.
 
 The owner agreed on the [shift inputs and trial reset](projects/course-02-agentic-ai/docs/reference-incident.md#agreed-handover), the [evidence needed to save a clue](projects/course-02-agentic-ai/docs/specs/memory.md#agreed-handover-evidence), and [when a lesson applies](projects/course-02-agentic-ai/docs/specs/memory.md#agreed-when-a-lesson-applies). Check the prerequisite against current evidence, not the version number alone.
 
-Use the [roadmap](ROADMAP.md) for milestone outcomes and [GitHub Issues](https://github.com/jpboliv/meridian-agents/issues) for live task status. Update this page when the next discussion changes.
+Use the [dated roadmap](ROADMAP.md#delivery-order) for the delivery sequence. The next decision is [baseline review #8](https://github.com/jpboliv/meridian-agents/issues/8). [Experiment #21](https://github.com/jpboliv/meridian-agents/issues/21) tracks provider prompt caching and verified outcomes separately from the optional tool-result cache in #16.
 
 The owner confirmed the submission deadline: 30 November 2026 at 23:59 Lisbon time (`Europe/Lisbon`).
+
+[Class pitch for Luís](projects/course-02-agentic-ai/docs/design-review.md#para-apresentar-à-turma-cerca-de-um-minuto): prompt caching is the course deep dive. Compare two timestamp positions and evaluate provider-reported reuse, whole-incident cost, and verified decisions. No provider results yet. The separate memory trials keep the same full runbook. Protect correction, specialist handoff, worker resume, and the 29 November rehearsal. Caching tool results and comparing compaction policies remain optional.
 
 Planned memory correction case: [the wrongly credited restart](projects/course-02-agentic-ai/docs/reference-incident.md#the-wrongly-credited-restart). No run results yet.
 

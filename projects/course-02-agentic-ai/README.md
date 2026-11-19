@@ -11,6 +11,20 @@ It grows in three milestones:
 
 Start with the [project goals](docs/project.md) and [reference incident](docs/reference-incident.md). Follow the [roadmap](../../ROADMAP.md) for milestone outcomes.
 
+For the class presentation, use [the one-minute pitch in Portuguese](docs/design-review.md#para-apresentar-à-turma-cerca-de-um-minuto).
+
+## Run the first-line cases
+
+From the repository root:
+
+```sh
+uv run --locked python projects/course-02-agentic-ai/first_line/demo.py
+```
+
+This starts a fresh simulator for each case. The offline driver follows a fixed read order and chooses a target from the readings. MCP services, approvals, actions, recovery readings, and the course evaluator run locally. Each output line is a JSON trace. The command exits with a failure if any case fails. The [experiment log](docs/experiments.md#three-shifts-without-memory) explains the results.
+
+For model decisions, set `OPENAI_API_KEY` in the local `.env` and add `--live` to the command. The default model is `gpt-4.1-mini`; `OPENAI_MODEL` selects another. The model chooses reads and proposes an action. Code controls the approval, dispatch, and recovery report. Only the evaluator reads `first_line/checks/`. Cases A, C, and D form the three-shift story. B has missing readings; in [E the monitor answers with old readings](docs/experiments.md#case-e-the-healthy-but-stale-monitor). Each starts without memory. These runs do not measure provider cache reuse, cross-shift recall, or worker replacement.
+
 ## Design index
 
 Read the [review introduction](docs/design-review.md) on GitHub, or open `docs/decision-report.html` in a browser after cloning the repository. The HTML file contains the complete report and its diagrams. Reading it needs no setup.

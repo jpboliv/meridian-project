@@ -4,13 +4,23 @@ Specification review · 19 November 2026
 
 ## The short version for Luís
 
-I will build an on-call agent for Meridian, a simulated stock exchange. Three shifts will get the same alert: “The order gateway is slow.” On the first shift, one instance needs a restart. On the second, a different instance has the same problem. On the third, the delay comes from the database link.
+### Para apresentar à turma (cerca de um minuto)
 
-I want to find out whether a lesson from yesterday helps the next shift find the fault faster. I will compare no lesson, a lesson the agent can look up, and the same lesson in the handover. I will show what the agent read, which action it took, and whether the service recovered. A faster wrong restart is a failure.
+> Vou usar a Meridian para aprofundar dois temas das aulas: caching e avaliação. Quero perceber se consigo reduzir o custo de investigar um incidente sem piorar a decisão do agente.
+>
+> A ideia veio de um artigo da Helloform. A cada passo, o agente volta a enviar as mesmas instruções. Se o início do pedido se mantiver igual, o fornecedor do modelo pode reaproveitar esse trabalho. Vou testar duas versões: numa, a hora muda logo no início do pedido; na outra, vai no fim. O conteúdo é o mesmo.
+>
+> A Meridian dá-me uma forma de avaliar isto: consigo repetir o mesmo alerta, «as ordens estão lentas», mas mudar a causa. Ontem era o gateway; hoje é a ligação à base de dados. Vou medir quanto custou investigar cada incidente e ver que decisão o agente tomou. Se gastar menos mas reiniciar um gateway saudável, a versão mais barata falhou.
 
-The course supplies the exchange, tools, and executor. My work is the software around the model: what it sees, what it remembers, when it can act, and how it resumes. I will start with one agent. Then I will add memory and compare it. Finally, I will add two specialists and interrupt the system after a restart. The next worker must finish the investigation without restarting the instance again.
+### Se o Luís perguntar como vou medir
+
+Vou repetir cada incidente com o mesmo modelo, as mesmas ferramentas e o mesmo estado inicial. Só muda a posição da hora no pedido. Para cada versão, vou registar quantos tokens de entrada o fornecedor indica ter reutilizado, o custo do incidente inteiro e as leituras que justificaram a decisão. O que se reutiliza é o início do pedido. O agente continua a consultar os dados do turno atual; não recebe o diagnóstico de ontem como resposta.
+
+Se os pedidos forem demasiado curtos e o fornecedor registar zero tokens em cache, isso também é um resultado. Se não fornecer essa métrica, fica como desconhecida. Para já, testei cinco casos com decisões programadas. Num deles, o monitor responde às dez, mas a leitura é das nove. A comparação com o modelo ainda está por fazer.
 
 ## One decision from start to finish
+
+In the separate handover experiment, a shift credits a 10:05 restart for a drop in latency that began at 10:02. The times rule out one claim: the restart did not start the recovery. They do not tell us what caused it or whether the restart helped later.
 
 Two gateway instances answer orders. On the first shift, the agent compares their memory use. One exceeds the limit in the current runbook, the service's operating procedure. The agent checks the links that the gateway depends on. With healthy links and approval for that instance, it requests one restart.
 
@@ -34,9 +44,11 @@ Four other read-only shifts crossed two choices: with or without a lesson, and i
 
 These five trials used synthetic files. None used a simulator action. They did not establish a benefit from recall, caching, specialist work, or automatic shortening. The [experiment log](experiments.md) records the conditions. The [evaluation specification](specs/evaluation.md) defines the comparisons that still need results.
 
+The [five M1 simulator traces](experiments.md#case-e-the-healthy-but-stale-monitor) use scripted decisions. Two cases restart different targets. Three hand over: missing readings, a changed cause, and a healthy sample from before the alert. They test the software around the model. Live model behavior and the value of reuse still need measurements.
+
 ## What we took from Helloform
 
-Fred Oliveira’s [“Lessons in harness design: context, compaction and memory”](https://helloform.com/blog/harness-design-part-1/) explains choices that the software makes before a model can act. Meridian will use the following ideas. The limits and acceptance cases are Meridian design choices.
+Fred Oliveira’s [“Lessons in harness design: context, compaction and memory”](https://helloform.com/blog/harness-design-part-1/) suggests ordering sections of a request by how often they change. The timestamp experiment above tests that idea. The table also records follow-up ideas: prompt fingerprints, caching tool results, and comparing summary costs are optional.
 
 Context is the material the model sees in one call. A token is a unit of model text. A cache stores work for reuse. A fingerprint identifies the exact contents of a section.
 

@@ -16,7 +16,7 @@ Build each request from named sections in this order:
 
 The first two sections come from reviewed project files. A quote in a ticket stays in the evidence section with the ticket ID. Text from tickets, logs, tools, or lessons cannot change the rules. The lead agent and specialists share the common rules. Each role receives only the tools it needs.
 
-Record the prompt ID, revision, role, model, tool catalog revision, and token count for each section. A token is a unit of model input or output. Record a fingerprint of each section and the name of the first section that changed. A matching fingerprint shows identical text. Only the provider can report a cache hit.
+Record the prompt revision, role, model, tool catalog revision, and available token counts. A token is a unit of model input or output. Optional cache experiment: record a fingerprint of each section and the first section that changed. A matching fingerprint shows identical text. Only the provider can report a cache hit.
 
 Keep unchanged sections byte-for-byte stable. Sort tool definitions and field names. Put clocks and request IDs at the end. For an ordinary update, append the new value and name the value it replaces. At the next summary, keep only the current value. If a source disappears, access changes, or advice needs a correction, rebuild before the next call.
 

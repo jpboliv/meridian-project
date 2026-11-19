@@ -2,7 +2,7 @@
 
 | Decision | Reason |
 |---|---|
-| Use the supplied Meridian simulator. | Spend project time on agent behavior. |
+| Agreed, 19 Nov 2026 ([#3](https://github.com/jpboliv/meridian-agents/issues/3)): reuse the Meridian simulator as a starting point. We can add tools and cases, and change the simulator when an experiment warrants it. | The simulated exchange makes trials repeatable. Its existing tool catalog and fault models do not limit the questions we can test. |
 | Study memory, context, and caching together. | The owner wants to explain how earlier information affects current decisions. |
 | Track work in personal GitHub Issues. | Keep discussions and delivery evidence with the project. |
 | Agreed, 18 Nov 2026 ([#5](https://github.com/jpboliv/meridian-agents/issues/5)): keep a corrected claim and its correction in the same handover note, or omit the old claim. | A shift could act on stale advice before opening a separate correction. The original record remains available. |
@@ -16,6 +16,8 @@ Agreed, 19 Nov 2026 ([#6](https://github.com/jpboliv/meridian-agents/issues/6)):
 Agreed, 19 Nov 2026 ([#6](https://github.com/jpboliv/meridian-agents/issues/6)): [remove deleted evidence from derived records](specs/memory.md#agreed-when-a-source-is-deleted). A copied claim can outlive its evidence if the system removes only the link.
 
 ## Delegated choices for owner review
+
+19 November, after the course-fit review: deliver the verified restart and missing-evidence handover first. Keep correction, failed specialist handoff, and resume on the delivery path. For the class deep dive, keep one prompt-caching comparison: moving the timestamp tests the Helloform idea without changing the information available to the agent. Evaluate cost alongside verified outcomes. Defer application caches and compaction comparisons. For the separate memory comparison, keep the full runbook in both versions. See the [delivery priorities](project.md#agreed-delivery-priorities).
 
 State: Draft, 19 November 2026. The owner delegated the remaining choices and requested one review. These are design decisions, not project results. The [review introduction](design-review.md) gives the short explanation for Luís and the reasons for using the Helloform ideas.
 

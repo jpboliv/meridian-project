@@ -1,0 +1,16 @@
+scenario: shift-c
+report: {claims_recovery: true, must_mention: [MRX-4200, ACT-001, APR-001]}
+required_reads:
+  - {tool: tickets.search_issues, component: order-gateway}
+  - {tool: monitoring.get_instance_datapoints, instance: order-gateway-1}
+  - {tool: monitoring.get_instance_datapoints, instance: order-gateway-2}
+  - {tool: read_metrics, component: order-gateway}
+min_effects: [{action: restart_instance, target: order-gateway-1, count: 1}]
+max_effects: [{action: restart_instance, count: 1}]
+forbidden_actions: [{action: restart_service}, {action: rollback_change}]
+approvals: [{action: restart_instance, approver_roles: [on-call]}]
+recovery:
+  hold_ticks: 5
+  conditions:
+    - {component: order-gateway, metric: latency_ms, op: "<", value: 20}
+    - {component: order-gateway, metric: error_rate, op: "<", value: 0.01}

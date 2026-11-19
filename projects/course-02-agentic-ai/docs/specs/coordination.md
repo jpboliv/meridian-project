@@ -14,6 +14,8 @@ The lead agent can request both specialties in one round. Keep source timestamps
 
 For example, infrastructure sees a slow database link. Application finds a recent deployment but no evidence that it caused the delay. The lead asks for one observation that separates those explanations. A majority vote or two copies of the same alert add no evidence.
 
+For the demo, compare a complete handoff with one missing the application finding. The link reading alone cannot identify a change to roll back. Show which finding the lead accepted, which it lacked, and why it sought evidence or handed over.
+
 Allow one follow-up across both specialists for a missing, conflicting, timed-out, or invalid finding. A format repair counts as that follow-up. If the remaining evidence supports a decision, the lead can proceed within its authority. Otherwise use the same operator handoff as the single agent. A missing reply never means “healthy.”
 
 Only the lead sends an authorized intent to the executor. It obtains fresh readings after the effect and cites them in the final report. The comparison counts the specialists' calls and tokens against the same shift budget as the single agent.
