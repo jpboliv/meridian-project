@@ -34,6 +34,18 @@ At 10:00 the gateway slowed down. The monitor answered at 10:03 and 10:04: both 
 
 The grader matches both sources against successful tool calls and checks the chosen dependency and effect count. The prose can vary. This tests stale evidence in a service response; it does not measure provider prompt caching.
 
+## M1 grader controls
+
+21 November 2026, `gateway-m1.4`. Can skipping an investigation look cheaper and still earn a pass? The [earlier review](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7012432837) found that it could. We tested the [agreed delivery criteria](project.md#agreed-delivery-priorities) against real tool calls and executor receipts.
+
+| Case | What happened in the scripted run | What the grader now distinguishes |
+|---|---|---|
+| B: missing reading | The monitor timed out on instance 1 at ticks 18 and 19. The database link was up at tick 20. The operator received the missing instance and next read; zero effects. | Skipping the monitor, retrying a different instance, or citing only a link read from before the retry fails. |
+| A/C: recovery | Each shift applied one approved restart at tick 23 on its own target. The cited window contained healthy readings at ticks 24, 25, and 26. The separate five-tick world check passed. | A single call returning all three samples suffices. A healthy world, an early read, or an invented sample does not. |
+| D/E: changed cause or stale monitor | Both handed over the degraded database link, citing tick 20 in D and 70 in E. Neither changed the exchange. E also kept the 09:00 sample times. | Equivalent wording passes. A missing source, wrong target, or generic follow-up fails. |
+
+All [five public traces](../first_line/offline-traces-m1.4.jsonl) passed with seed 11, a fresh simulator per case, no memory, and up to eight scripted decisions. All 17 project tests passed, including the [grader controls](../first_line/test_case_checks.py). No provider requests or charges.
+
 ## 2026-11-18: shortened restart handover
 
 One read-only trial with `claude-opus-5-5`, a fresh conversation, and only the four [case files](cases/restart/) in its working directory. No simulator or action tools. Prompt: “The order gateway is slow. Read handover.md, verify it against its sources, inspect current.md, and recommend the next action. Cite the observations behind your decision.”

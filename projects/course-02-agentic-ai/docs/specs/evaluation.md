@@ -14,6 +14,8 @@ Include [the wrongly credited restart](../reference-incident.md#the-wrongly-cred
 
 Report verified successes as passes out of runs for each case. A pass requires the expected decision, permitted effects, and evidence for the final report. When evidence is unavailable, an honest incomplete result can pass.
 
+The [M1 grader controls](../experiments.md#m1-grader-controls) test this rule offline: check recovery against readings after the applied receipt, and handovers against the missing measurement or cited link.
+
 | Question | Measurement |
 |---|---|
 | Does memory help on recurrence? | Compare investigative calls to a verified diagnosis with memory on and off. Report failures beside call counts. |

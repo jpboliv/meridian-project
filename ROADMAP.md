@@ -19,6 +19,8 @@ Dates through 28 November are planning targets. The rehearsal target is **29 Nov
 
 [Design issues #1–11][design] hold the contracts. They all have drafts. Review the first-line contracts now, memory and access before M2, and specialist handoff and resume before M3. Individual agreed rules do not make the whole specification Agreed.
 
+Open a pull request in the private `meridian-project` repository when work starts on each milestone. Assign it to the matching milestone there and link the tracking issues from `meridian-agents`. Keep the implementation and evidence together for owner review before merging or tagging.
+
 If time gets tight, defer [#16][16] (caching tool results), prompt fingerprints, and summary-cost comparisons. **Keep #21:** it is the presentation’s prompt-caching experiment, and the simulator gives it a correctness check.
 
 [Live milestones][milestones] track the work; [STATUS.md](STATUS.md) records the latest evidence and next decision.
@@ -36,4 +38,4 @@ If time gets tight, defer [#16][16] (caching tool results), prompt fingerprints,
 [21]: https://github.com/jpboliv/meridian-agents/issues/21
 [design]: https://github.com/jpboliv/meridian-agents/milestone/1
 [milestones]: https://github.com/jpboliv/meridian-agents/milestones
-[traces]: projects/course-02-agentic-ai/docs/experiments.md#case-e-the-healthy-but-stale-monitor
+[traces]: projects/course-02-agentic-ai/docs/experiments.md#m1-grader-controls

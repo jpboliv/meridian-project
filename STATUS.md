@@ -1,8 +1,10 @@
 # Current focus
 
-First-line implementation. All five [public development cases](projects/course-02-agentic-ai/docs/experiments.md#case-e-the-healthy-but-stale-monitor) pass with scripted decisions. Case E adds a failure distinct from a timeout: the monitor successfully returns healthy samples from 09:00 for a 10:00 incident. The handover cites the fresh degraded database link and records no effects. No live-model baseline yet.
+First-line implementation. All five [public development cases](projects/course-02-agentic-ai/docs/experiments.md#m1-grader-controls) pass with scripted decisions under `gateway-m1.4`. The A/C reports match three healthy readings after the applied restart. B hands over after two timeouts on the same instance and a fresh link check. D and E cite the degraded link and have no effects. No live-model baseline yet.
 
-Resume here (19 November): the [last offline run](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7016420416) passed five scripted cases and seven tests. The next task needs no API key: fix [case B’s grader](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7012432837) so a handover that skips the monitor fails. Then make A/C require three observed post-restart readings and make D accept an equivalent, source-backed handover. Re-run all five cases before freezing M1.
+Resume here (21 November): review the [M1 milestone pull request](https://github.com/jpboliv/meridian-project/pull/1) against the [grader controls](projects/course-02-agentic-ai/first_line/test_case_checks.py) and [five offline traces](projects/course-02-agentic-ai/first_line/offline-traces-m1.4.jsonl). All 17 project tests pass. Next, add and test a single-case pilot with request and output limits. The current `--live` command runs all five cases.
+
+The [budget proposal](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7063836523) uses `gpt-6-luna` on the Responses API. Review the run settings and offline evidence before spending on the pilot. A separate Decisions API trial could test specialist routing after M1.
 
 Owner clarified the [reuse scope](projects/course-02-agentic-ai/docs/architecture.md#tool-boundary): new tools and cases are in scope. Extend the simulator when an experiment needs behavior it cannot currently represent.
 
