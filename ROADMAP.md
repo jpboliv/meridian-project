@@ -19,7 +19,7 @@ Dates through 28 November are planning targets. The rehearsal target is **29 Nov
 
 [Design foundation][design] holds the eleven specification issues. They all have drafts. Review the first-line contracts now, memory and access before M2, and specialist handoff and resume before M3. Individual agreed rules do not make the whole specification Agreed.
 
-Open a pull request in `jpboliv/meridian-project` when work starts on each milestone. Assign it to the same milestone as its issues and link the evidence for owner review before merging or tagging.
+Open a pull request in `jpboliv/meridian-project` when work starts on each milestone. Assign it to the same milestone as its issues and link the evidence. The orchestrator merges it after a clean independent review, as set out in [AGENTS.md](AGENTS.md); tagging still waits for owner review.
 
 If time gets tight, defer [#16][16] (caching tool results), prompt fingerprints, and summary-cost comparisons. **Keep #21:** it is the presentation’s prompt-caching experiment, and the simulator gives it a correctness check.
 

@@ -7,3 +7,6 @@
 5. Link implementation changes to an agreed contract. Include a trace or case that explains the result.
 6. Keep evaluator answers out of agent inputs. Keep credentials and private data out of published evidence.
 7. Record the reason for each policy change. Update the issue and `STATUS.md` before handing off work.
+8. The orchestrator uses the HERDR CLI to run task agents in their own panes. Close the implementer's pane before a fresh, independent Claude Opus 5.5 reviewer at high effort reviews that PR. Fix High and Medium findings, have a fresh reviewer check the changed head, then merge the clean, checked PR.
+9. At planning, implementation, and review, ask: “Is this really necessary?”
+10. Merging is delegated; specification agreement (rule 4) and live-run settings and spending still need separate owner decisions.
