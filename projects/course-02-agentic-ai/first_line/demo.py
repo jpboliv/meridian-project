@@ -7,10 +7,9 @@ import json
 from pathlib import Path
 
 from meridian.agent_runtime import IncidentDeps, default_model, identity_for, require_api_key
-from meridian.evaluate import evaluate
 from meridian.scenarios import load_solution
 from meridian.tools import MeridianTools
-from case_checks import stale_handover_checks
+from case_checks import evaluate_case
 from shift import Decision, MAX_DECISIONS, REVISION, Shift, live_decider
 from workbench import start_exchange
 
@@ -50,9 +49,7 @@ async def main(live):
         # Evaluation can advance the world; capture the last agent tick first.
         end_tick = sim.state.tick
         solution = load_solution(HERE / "checks" / path.name)
-        checks = evaluate(sim, tools.trace, report, solution)
-        if "stale_handover" in solution:
-            checks.checks.extend(stale_handover_checks(sim, tools.trace, report, solution["stale_handover"]))
+        checks = evaluate_case(sim, tools.trace, report, solution)
         passed &= checks.passed
         print(json.dumps({
             "case": path.stem, "revision": REVISION,
@@ -61,9 +58,11 @@ async def main(live):
             "completed_model_calls": calls,
             "seed": sim.scenario.seed, "decision_limit": MAX_DECISIONS, "end_tick": end_tick,
             "decisions": shift.decisions, "reads_and_actions": [
-                {"tick": c.tick, "tool": c.tool, **({"error": c.error} if c.error else {})} for c in tools.trace],
+                {"tick": c.tick, "tool": c.tool,
+                 **{k: c.args[k] for k in ("component", "device", "instance", "source", "target") if k in c.args},
+                 **({"error": c.error} if c.error else {})} for c in tools.trace],
             "report": report, "applied_effects": len(sim.executor.effects()),
-            "checks": [{"check": c.name, "pass": c.passed} for c in checks.checks],
+            "checks": [{"check": c.name, "pass": c.passed, "detail": c.detail} for c in checks.checks],
             "passed": checks.passed,
         }, ensure_ascii=False))
     return 0 if passed else 1

@@ -5,4 +5,4 @@ required_reads:
   - {tool: monitoring.get_instance_datapoints, device: order-gateway}
   - {tool: check_link, source: order-gateway, target: reference-db}
 forbidden_actions: [{action: restart_instance}, {action: restart_service}, {action: rollback_change}]
-stale_handover: {component: order-gateway, sample_tick: 5, dependency: reference-db}
+handover: {operation: investigate_link, component: order-gateway, dependency: reference-db, sample_tick: 5}

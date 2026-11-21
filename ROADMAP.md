@@ -38,4 +38,4 @@ If time gets tight, defer [#16][16] (caching tool results), prompt fingerprints,
 [21]: https://github.com/jpboliv/meridian-project/issues/21
 [design]: https://github.com/jpboliv/meridian-project/milestone/2
 [milestones]: https://github.com/jpboliv/meridian-project/milestones
-[traces]: projects/course-02-agentic-ai/docs/experiments.md#case-e-the-healthy-but-stale-monitor
+[traces]: projects/course-02-agentic-ai/docs/experiments.md#m1-grader-controls

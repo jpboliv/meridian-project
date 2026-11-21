@@ -404,6 +404,7 @@ code{overflow-wrap:anywhere;font-size:.88em}.anchor{display:block}.back{display:
 <h3 id="evaluation-agreed-metrics">Agreed metrics</h3>
 <p>Include <a href="#incident-the-wrongly-credited-restart">the wrongly credited restart</a> as a separate memory correction case. Score the saved correction and the next shift’s decision separately.</p>
 <p>Report verified successes as passes out of runs for each case. A pass requires the expected decision, permitted effects, and evidence for the final report. When evidence is unavailable, an honest incomplete result can pass.</p>
+<p>The <a href="#experiments-m1-grader-controls">M1 grader controls</a> test this rule offline: check recovery against readings after the applied receipt, and handovers against the missing measurement or cited link.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -655,6 +656,64 @@ code{overflow-wrap:anywhere;font-size:.88em}.anchor{display:block}.back{display:
 <p>19 November 2026, <code>gateway-m1.3</code>. <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/cases/shift-e.yaml">Scenario</a>, <a href="#incident-agreed-a-healthy-reading-from-before-the-alert">expected outcome</a>, <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/offline-traces-m1.3.jsonl">five offline traces</a>. One scripted run per case, seed 11, eight-decision limit, fresh simulator, no model calls or team memory.</p>
 <p>At 10:00 the gateway slowed down. The monitor answered at 10:03 and 10:04: both instances were running at 55% memory, but both samples were from 09:00. The harness marked them stale. At 10:05 the separate link check reported a degraded path to <code>reference-db</code>. The scripted driver chose to investigate that link. The handover cited the link observation, kept the old sample times, and made no recovery claim. No restart, rollback, or other effect occurred. A–D retained their previous outcomes.</p>
 <p>The grader matches both sources against successful tool calls and checks the chosen dependency and effect count. The prose can vary. This tests stale evidence in a service response; it does not measure provider prompt caching.</p>
+<h3 id="experiments-m1-grader-controls">M1 grader controls</h3>
+<p>21 November 2026, <code>gateway-m1.4</code>. Can skipping an investigation look cheaper and still earn a pass? The <a href="https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7064322943">earlier review</a> found that it could. We tested the <a href="#project-agreed-delivery-priorities">agreed delivery criteria</a> against real tool calls and executor receipts.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Case</th>
+<th>What happened in the scripted run</th>
+<th>What the grader now distinguishes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B: missing reading</td>
+<td>The monitor timed out on instance 1 at ticks 18 and 19. The database link was up at tick 20. The operator received the missing instance and next read; zero effects.</td>
+<td>Skipping the monitor, retrying a different instance, or citing only a link read from before the retry fails.</td>
+</tr>
+<tr>
+<td>A/C: recovery</td>
+<td>Each shift applied one approved restart at tick 23 on its own target. The cited window contained healthy readings at ticks 24, 25, and 26. The separate five-tick world check passed.</td>
+<td>A single call returning all three samples suffices. A healthy world, an early read, or an invented sample does not.</td>
+</tr>
+<tr>
+<td>D/E: changed cause or stale monitor</td>
+<td>Both handed over the degraded database link, citing tick 20 in D and 70 in E. Neither changed the exchange. E also kept the 09:00 sample times.</td>
+<td>Equivalent wording passes. A missing source, wrong target, or generic follow-up fails.</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/offline-traces-m1.4.jsonl">five public traces</a> passed with seed 11, a fresh simulator per case, no memory, and up to eight scripted decisions. All 17 project tests passed, including the <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/test_case_checks.py">grader controls</a>. No provider requests or charges.</p>
+<h3 id="experiments-case-b-the-replica-that-was-never-read">Case B: the replica that was never read</h3>
+<p>21 November 2026, <code>gateway-m1.5</code>. The <a href="https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7064996263">M1 review</a> found a gap in the <code>gateway-m1.4</code> handover. Instance 1 timed out twice, so the loop stopped before instance 2. The report reported a generic outage (“unavailable”) and asked only for instance 1. Comparing the gateway needs a reading from every replica. Policy change: a missing-reading handover must report a timeout as a timeout and name the failed read. The harness builds that wording from the tool name and the instance it requested. Backend error text never enters the report; any other failure keeps the generic “unavailable” message. It must also list each replica in the deployment record that still has no reading. Readings already taken remain separate observations. This applies the <a href="#incident-when-a-reading-is-missing">agreed missing-reading rule</a> (“which reading was missing, and what to read next”) and the M1 <a href="#project-agreed-delivery-priorities">useful-handover criterion</a>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Case</th>
+<th>What happened in the scripted run</th>
+<th>What the grader now distinguishes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B: missing reading</td>
+<td><code>deployments.get_service</code> listed two replicas at tick 17. The monitor timed out on instance 1 at ticks 18 and 19. The database link was up at tick 20. The report says “monitoring.get_instance_datapoints timed out on order-gateway-1. Not yet read: order-gateway-2.” It asks for readings from both instances (<code>failed: order-gateway-1</code>). Zero effects.</td>
+<td>Both replicas in any order pass. Fail: a request for instance 1 alone (the m1.4 handover), an invented third instance, the wrong failed read, or a generic “unavailable”. The earlier retry, link-order, and no-effect checks are unchanged.</td>
+</tr>
+<tr>
+<td>A variant: later replica fails</td>
+<td>A <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/test_shift.py">shift test</a> times out instance 2 after a current reading from instance 1.</td>
+<td>The handover keeps instance 1’s reading under <code>instances</code> and asks only for instance 2. No approval or effect.</td>
+</tr>
+<tr>
+<td>A variant: unrecognised backend error</td>
+<td>A shift test makes the monitor return an error that contains a credential-like string.</td>
+<td>The trace records the backend text. The report says only “unavailable”, still asks for both instances, and has no approval or effect.</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/offline-traces-m1.5.jsonl">five public traces</a> passed with seed 11, a fresh simulator per case, no memory, and up to eight scripted decisions. A, C, D, and E kept their m1.4 outcomes. All 20 project tests passed. No provider requests or charges. Scripted decisions do not show whether a live model would carry the full list of unread replicas forward.</p>
 <h3 id="experiments-2026-11-18-shortened-restart-handover">2026-11-18: shortened restart handover</h3>
 <p>One read-only trial with <code>claude-opus-5-5</code>, a fresh conversation, and only the four <a href="#samples">case files</a> in its working directory. No simulator or action tools. Prompt: “The order gateway is slow. Read handover.md, verify it against its sources, inspect current.md, and recommend the next action. Cite the observations behind your decision.”</p>
 <p>Expected: recover both times from the originals, bound the causal claim, and use the current readings. Observed:</p>

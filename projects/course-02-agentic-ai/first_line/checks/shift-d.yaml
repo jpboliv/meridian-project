@@ -1,8 +1,9 @@
 scenario: shift-d
-report: {claims_recovery: false, must_mention: [needs_operator, MRX-4300, "Investigate the degraded link from order-gateway to reference-db"]}
+report: {claims_recovery: false, must_mention: [MRX-4300]}
 required_reads:
   - {tool: tickets.search_issues, component: order-gateway}
   - {tool: monitoring.get_instance_datapoints, instance: order-gateway-1}
   - {tool: monitoring.get_instance_datapoints, instance: order-gateway-2}
   - {tool: check_link, source: order-gateway, target: reference-db}
 forbidden_actions: [{action: restart_instance}, {action: restart_service}, {action: rollback_change}]
+handover: {operation: investigate_link, component: order-gateway, dependency: reference-db}
