@@ -85,6 +85,35 @@ Offline, A–E reproduce the [`gateway-m1.5` traces](../first_line/offline-trace
 - **Usage and cost.** Input 368/404/404 and output 38/44/39 tokens (1,176 in and 121 out in total). Zero cache reads and writes were reported. The estimated model token cost is **USD 0.0001781**, at the [public standard rate](https://developers.openai.com/api/docs/models/gpt-6-luna#pricing) of $0.10 input and $0.50 output per million tokens (1,176 × $0.10 + 121 × $0.50, divided by 10⁶). This is an estimate, not an invoice. The 1,024-token visible minimum applies to each request, not to their sum. Every request here was below it, so zero reuse was expected. This says nothing about other cases or about #21.
 - **Decision.** No baseline, repetition, policy change, M1 tag, or #21 result. Next step, offline only: investigate why the model selected tickets again once the correlated ticket was already present. The cause is unproven, and no fix has been tested.
 
+## 2026-11-21: the completed ticket read, offline (`gateway-m1.6`)
+
+[#4](https://github.com/jpboliv/meridian-project/issues/4), [#12](https://github.com/jpboliv/meridian-project/issues/12), [#13](https://github.com/jpboliv/meridian-project/issues/13). Follows the [failed live pilot](#2026-11-21-live-pilot-case-b). Question: after the first ticket search, what did the model receive, and can a small change make that completed step clear without routing the run? No provider request, key, or live CLI was used.
+
+- **Observed (historical, [pilot trace](../first_line/live-pilot-b-2026-11-21.jsonl#L1)).** Three `tickets` choices, input 368/404/404 tokens, and a fourth request refused at cap 3. Raw request bodies were not captured.
+- **Reconstructed (not a captured payload).** The [independent replay on #13](https://github.com/jpboliv/meridian-project/issues/13#issuecomment-7069096291) used source `28bc78f`, the recorded choices, and a mock with the network blocked. Request bodies 2 and 3 were byte-identical (SHA-256 `9362a9bfdfee8137ae5f6d20433242db533e79a464cb52b969a31be71e75162d`). Each user JSON was 922 bytes and already listed MRX-4100. The instructions still said “Start by correlating the ticket.” A separate local mock replay, run with the pilot's `shift.py` and `pilot.py` hashes, also produced identical user messages and instructions for requests 2 and 3. Each decision is a fresh single-message request with no record of earlier choices, so a repeated search did not change what the model saw.
+- **Hypothesis (unproven).** The unconditional instruction to start with the ticket, together with no signal that the step was done, invited the same choice again. The equal token counts are consistent with this, but they do not establish the model's reasons.
+- **Contract.** The [agreed delivery priorities](project.md#agreed-delivery-priorities) require correlating the ticket and monitoring evidence before a restart, or else handing over the specific gap. One ticket search is enough for the first part. Repeating it adds neither monitoring evidence nor a handover.
+- **Change ([`shift.py`](../first_line/shift.py), `gateway-m1.6`).**
+  - Each decision gets a code-owned `progress` field, last in the user JSON. It holds two things.
+    - `ticket`: `not searched`; `matched` (the validated search kept a ticket for this incident); or `no match` (a completed search kept none).
+    - `completed_steps`: finished investigation steps per step name. These are not MCP attempts: one `links` step makes two `check_link` calls, and an `instances` step can retry.
+  - It is bounded at one state and at most three counts. It names no next step and blocks no read.
+  - The fixed instructions now explain each ticket state:
+    - search first only when the ticket is not searched;
+    - a match completes correlation;
+    - no match is missing evidence, not a reason to keep searching;
+    - the runbook then guides the next useful read or a handover;
+    - a completed step is repeated only for a newer result.
+  - Caps, monitor retries, receipt and recovery checks, the #21 arms, and the decision limit are unchanged.
+- **Two versions, kept apart.** On the scripted A–E decisions, the leading user-JSON overlap is unchanged (21–22 and 821–1315 bytes; same test). `progress` follows the observations, and the first difference still falls inside them. Across versions, the live instructions changed on purpose. Do not pool m1.5 and m1.6 requests in one #21 comparison.
+- **Offline result ([mock-wire tests](../first_line/test_pilot.py)).**
+  - *Pilot's recorded choices* (cap 3, 512 output tokens): decisions 1–3 receive `not searched` with no counts, then `matched` with `tickets: 1`, then `matched` with `tickets: 2`. Requests 2 and 3 are no longer identical. The repeated choices still run, use up the cap, and **fail** with zero effects.
+  - *Empty or unrelated-ticket search:* reported as `no match`, never `matched`, and a repeat search still runs.
+  - *Alternate orders* (`tickets → instances`, `tickets → links → instances`): pass within the same cap.
+  - These are replayed choices, not model evidence. The [scripted traces](../first_line/offline-traces-m1.6.jsonl) match m1.5 except for `revision` and `harness_sha256`.
+- **Unknown.** Whether a live model would now choose differently. Prompt structure ([#4](specs/prompts.md)) stays Draft as a whole. The cue fits its draft order (“the investigation so far … changes since the last call”).
+- **Next step.** Owner review of the cue under #4. Any live check of `gateway-m1.6` needs a separate owner decision on settings and spending (#8).
+
 ## Context-reuse arms, prepared offline
 
 21 November 2026, `gateway-m1.5` harness ([#21](https://github.com/jpboliv/meridian-project/issues/21), [#20](https://github.com/jpboliv/meridian-project/issues/20)). Project question: when does reusing context lower the cost of investigating an incident, and what evidence must the agent gather again before acting? Timestamp position is one hypothesis, not the whole project. This section is the run protocol for #21. It implements the request side of the [agreed prompt-caching comparison](specs/evaluation.md#agreed-metrics). `shift.py`, the scripted traces, the lab, model selection, and the limits are unchanged. The baseline live request is also unchanged. The versioned runbook and source cache stays optional under [#16](https://github.com/jpboliv/meridian-project/issues/16).
