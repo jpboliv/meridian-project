@@ -5,24 +5,28 @@ A mock HTTP transport stands in for the Responses API. No key, network, or provi
 
 import asyncio
 import json
+import statistics
 
 import httpx2
 import pytest
 from openai import AsyncOpenAI, APIStatusError
 
 import demo
-from pilot import Pilot, ProviderBudget
+from pilot import ARMS, Pilot, ProviderBudget, with_current_time
 
 MODEL = "pilot-test-model"  # a placeholder: no model has been chosen for the paid pilot
 
 
 class FakeResponses:
-    """Answers each request in turn. A dict is a decision; an int is an error status; an exception is raised."""
+    """Answers each request in turn. A dict is a decision; an int is an error status; an exception is raised.
 
-    def __init__(self, *answers, usage=True):
+    `details` gives `usage.input_tokens_details` for each successful response in turn; `...` omits the field."""
+
+    def __init__(self, *answers, usage=True, details=()):
         self.answers = list(answers)
         self.bodies = []
         self.usage = usage  # False: successful responses carry no usage field
+        self.details = list(details)
 
     def __call__(self, request):
         body = json.loads(request.content)
@@ -36,18 +40,28 @@ class FakeResponses:
         tool = body["tools"][0]["name"]  # the output tool the agent declared
         body = {
             "id": f"resp_{len(self.bodies)}", "object": "response", "created_at": 1763700000, "status": "completed",
-            "model": f"{MODEL}-2026-11-01", "parallel_tool_calls": True, "tool_choice": "required", "tools": [],
+            "model": f"{body['model']}-2026-11-01", "parallel_tool_calls": True, "tool_choice": "required", "tools": [],
             "output": [{"type": "function_call", "id": f"fc_{len(self.bodies)}", "call_id": f"call_{len(self.bodies)}",
                         "name": tool, "arguments": json.dumps(answer), "status": "completed"}]}
         if self.usage:
             body["usage"] = {"input_tokens": 100 + len(self.bodies), "output_tokens": 10,
                              "total_tokens": 110 + len(self.bodies)}
+            details = self.details.pop(0) if self.details else ...
+            if details is not ...:
+                body["usage"]["input_tokens_details"] = details
         return httpx2.Response(200, json=body)
 
 
-def pilot_with(fake, max_requests=3, max_output_tokens=64):
-    return Pilot(MODEL, max_requests=max_requests, max_output_tokens=max_output_tokens,
+def pilot_with(fake, max_requests=3, max_output_tokens=64, arm=None, model=MODEL):
+    return Pilot(model, max_requests=max_requests, max_output_tokens=max_output_tokens, arm=arm,
                  api_key="test-key-not-a-secret", transport=httpx2.MockTransport(fake))
+
+
+def user_json(body):
+    """The decision context as sent: the text of the first user message on the wire."""
+    item = next(item for item in body["input"] if item.get("role") == "user")
+    content = item["content"]
+    return content if isinstance(content, str) else "".join(part["text"] for part in content)
 
 
 LIVE_A = ["--live", "--case", "A", "--max-requests", "3", "--max-output-tokens", "64"]
@@ -63,8 +77,12 @@ LIVE_A = ["--live", "--case", "A", "--max-requests", "3", "--max-output-tokens",
     ["--live", "--case", "F", "--max-requests", "3", "--max-output-tokens", "64"],
     [*LIVE_A, "--model", MODEL],
     ["--case", "A", "--max-requests", "3"],
+    ["--case", "A", "--reuse-arm", "time-last"],
+    [*LIVE_A, "--reuse-arm", "time-middle"],
+    [*LIVE_A, "--reuse-arm", "time-first-no-cache"],
 ], ids=["no-case-or-limits", "no-output-limit", "no-case", "zero-requests", "negative-output",
-        "non-numeric", "unknown-case", "no-model-flag", "limit-without-live"])
+        "non-numeric", "unknown-case", "no-model-flag", "limit-without-live", "arm-without-live",
+        "unknown-arm", "no-factorial-arm"])
 def test_invalid_live_command_stops_before_any_key_or_client(argv, monkeypatch):
     touched = []
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -95,7 +113,7 @@ def live_main(monkeypatch, argv, fake, env_model):
 
     def build(model_name, **limits):
         order.append(("provider", model_name, limits))
-        built.append(pilot_with(fake, **limits))
+        built.append(pilot_with(fake, model=model_name, **limits))
         return built[-1]
 
     monkeypatch.setattr(demo, "Pilot", build)
@@ -107,7 +125,9 @@ def test_valid_live_command_uses_openai_model_and_runs_only_the_selected_case(mo
     argv = ["--live", "--case", "C", "--max-requests", "2", "--max-output-tokens", "32"]
     code, order, (pilot,) = live_main(monkeypatch, argv, fake, f"  {MODEL} ")
     assert code == 1  # C expects a verified restart; the pilot stopped first
-    assert order == ["key", ("provider", MODEL, {"max_requests": 2, "max_output_tokens": 32})]
+    assert order == ["key", ("provider", MODEL, {"max_requests": 2, "max_output_tokens": 32, "arm": None})]
+    assert all("current_time" not in json.loads(user_json(body)) for body in fake.bodies)  # baseline layout
+    assert all("prompt_cache_options" not in body for body in fake.bodies)
     assert pilot.client.is_closed()
     record, = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert record["case"] == "shift-c" and record["model"] == MODEL and record["pilot"]["configured_model"] == MODEL
@@ -150,8 +170,10 @@ def test_successful_response_without_usage_is_unknown_not_zero():
     call, = record["completed_model_calls"]
     assert call == {"model": f"{MODEL}-2026-11-01", "requests": 1, "input_tokens": None, "output_tokens": None}
     run = record["pilot"]
-    assert run["attempts"] == [{"status": 200, "model": f"{MODEL}-2026-11-01", "input_tokens": None, "output_tokens": None}]
+    assert run["attempts"] == [{"status": 200, "model": f"{MODEL}-2026-11-01", "input_tokens": None, "output_tokens": None,
+                                "cached_tokens": None, "cache_write_tokens": None}]
     assert run["reported_input_tokens"] is None and run["reported_output_tokens"] is None
+    assert run["reported_cached_tokens"] is None and run["reported_cache_write_tokens"] is None
 
 
 def test_request_cap_spans_decisions_and_output_repairs():
@@ -184,7 +206,9 @@ def test_retryable_provider_failure_is_sent_once_and_handed_over(failure):
     run = record["pilot"]
     assert run["requests_sent"] == 1 and run["requests_refused"] == 0
     assert run["attempts"] == [{"status": failure if isinstance(failure, int) else None, "model": None,
-                                "input_tokens": None, "output_tokens": None}]
+                                "input_tokens": None, "output_tokens": None,
+                                "cached_tokens": None, "cache_write_tokens": None}]
+    assert run["reported_cached_tokens"] is None and run["reported_cache_write_tokens"] is None
     assert run["requests_without_usage"] == 1
     assert run["reported_input_tokens"] is None and run["reported_output_tokens"] is None  # unknown, not zero
     assert record["completed_model_calls"] == [] and record["decisions"] == []
@@ -209,3 +233,165 @@ def test_sdk_retries_would_still_count_against_the_cap():
     assert not isinstance(error, APIStatusError)  # the third attempt was refused locally, not answered
     assert len(fake.bodies) == 2 and budget.refused == 1
     assert [a["status"] for a in budget.attempts] == [500, 500]
+
+
+# --- #21: timestamp arms, the no-cache arm, and provider-reported cache usage -------------------------------
+
+LUNA = "gpt-6-luna"  # the owner's chosen model; the mock transport stands in for it, so nothing is called
+RESTART_A = ({"step": "tickets"}, {"step": "instances"}, {"step": "links"},
+             {"step": "restart", "target": "order-gateway-2"})
+
+
+def run_arm(arm, *answers, max_requests=4, details=()):
+    fake = FakeResponses(*answers, details=details)
+    record = asyncio.run(demo.run_case(demo.CASES["A"], pilot_with(fake, max_requests, arm=arm, model=LUNA)))
+    return record, fake
+
+
+def test_arms_send_the_same_data_with_the_current_simulated_time_first_or_last():
+    runs = {arm: run_arm(arm, *RESTART_A) for arm in (None, *ARMS)}
+    baseline, base_fake = runs[None]
+    sent_base = [user_json(body) for body in base_fake.bodies]
+    assert len(sent_base) == 4 and all("current_time" not in json.loads(text) for text in sent_base)
+    for arm, (record, fake) in runs.items():
+        # Same decisions, reads, effects, and verified report in every arm: only the request layout differs.
+        assert record["passed"] and record["applied_effects"] == 1
+        for key in ("decisions", "reads_and_actions", "report", "end_tick"):
+            assert record[key] == baseline[key], (arm, key)
+        assert "current_time" not in json.dumps(record["report"])  # stored observations are not changed
+        assert record["pilot"]["arm"] == arm
+        if arm is None:
+            continue
+        sent = [user_json(body) for body in fake.bodies]
+        times = [json.loads(text)["current_time"] for text in sent]
+        assert times == sorted(times) and len(set(times)) == len(times)  # read again at each decision
+        position = ARMS[arm][0]
+        for text, base, now in zip(sent, sent_base, times):
+            field = f'"current_time": "{now}"'
+            # Byte-for-byte the baseline JSON with one field added at the start or end.
+            assert text == ("{" + field + ", " + base[1:] if position == "first" else base[:-1] + ", " + field + "}")
+            data = json.loads(text)
+            assert list(data)[0 if position == "first" else -1] == "current_time"
+            assert data["incident"] == json.loads(base)["incident"]  # the incident's own time is unchanged
+        # The alert stays at 10:05; the runbook read has already moved the clock before the first decision.
+        assert json.loads(sent[0])["incident"]["time"] == "10:05" and times[0] == "10:06"
+
+
+def substance(body):
+    """The request without its cache mode or the SDK's incidental cache-diagnostic reference."""
+    body = json.loads(json.dumps(body))
+    options = body.pop("prompt_cache_options", {})
+    options.pop("mode", None)
+    options.pop("comparison_response_id", None)
+    if options:
+        body["prompt_cache_options"] = options
+    return body
+
+
+@pytest.mark.parametrize("answers, repair", [(RESTART_A, False),
+                                             (({"step": "reboot"}, {"step": "tickets"}, {"step": "instances"}), True)],
+                         ids=["four-decisions", "output-repair"])
+def test_no_cache_arm_sends_the_control_request_with_explicit_mode_and_no_breakpoints(answers, repair):
+    control, control_fake = run_arm("time-last", *answers, max_requests=len(answers))
+    no_cache, fake = run_arm("time-last-no-cache", *answers, max_requests=len(answers))
+    assert len(fake.bodies) == len(control_fake.bodies) == len(answers)
+    if repair:  # the second request repairs the first decision's invalid output, at the same simulated time
+        assert any(item.get("type") == "function_call_output" for item in fake.bodies[1]["input"])
+        assert user_json(fake.bodies[0]) == user_json(fake.bodies[1])
+    for body, control_body in zip(fake.bodies, control_fake.bodies):
+        assert body["prompt_cache_options"]["mode"] == "explicit"  # on every request, repairs included
+        assert control_body.get("prompt_cache_options", {}).get("mode") is None  # provider default (implicit)
+        wire = json.dumps(body)
+        for marker in ("prompt_cache_breakpoint", "prompt_cache_key", "prompt_cache_retention", '"ttl"'):
+            assert marker not in wire and marker not in json.dumps(control_body)
+        # With the same fixed decisions: same instructions, messages, tools, output limit, and simulated time.
+        assert substance(body) == substance(control_body)
+    for key in ("decisions", "reads_and_actions", "report"):
+        assert no_cache[key] == control[key]
+    assert no_cache["pilot"]["prompt_cache_options"] == {"mode": "explicit"}
+    assert control["pilot"]["prompt_cache_options"] is None
+
+
+@pytest.mark.parametrize("model", [MODEL, "gpt-4.1-mini", "gpt-5.6", "gpt-6-lunar", "gpt-6-luna-2026-11-01",
+                                   "GPT-6-LUNA"])
+def test_no_cache_arm_on_an_unconfirmed_model_stops_before_any_request(model, monkeypatch, capsys):
+    fake = FakeResponses(*RESTART_A)
+    with pytest.raises(SystemExit) as stop:
+        live_main(monkeypatch, [*LIVE_A, "--reuse-arm", "time-last-no-cache"], fake, model)
+    assert "supported only for gpt-6-luna" in str(stop.value.code)
+    assert fake.bodies == [] and capsys.readouterr().out == ""  # no fallback to default caching
+
+
+def test_rejected_no_cache_setting_is_not_retried_without_it_or_counted_as_a_hit():
+    record, fake = run_arm("time-last-no-cache", 400, *RESTART_A)
+    assert len(fake.bodies) == 1 and fake.bodies[0]["prompt_cache_options"] == {"mode": "explicit"}
+    run = record["pilot"]
+    assert run["attempts"][0]["status"] == 400 and run["attempts"][0]["cached_tokens"] is None
+    assert run["reported_cached_tokens"] is None and run["reported_cache_write_tokens"] is None
+    assert record["report"]["next_step"].startswith("Model unavailable") and record["applied_effects"] == 0
+
+
+def test_cache_reads_and_writes_are_recorded_per_attempt_and_totalled_separately():
+    details = [{"cached_tokens": 0, "cache_write_tokens": 0},  # zero is a reported result
+               {"cached_tokens": 64},                          # write count omitted: unknown
+               {"cached_tokens": 64, "cache_write_tokens": 32}]  # 96 of 103 input tokens: consistent
+    record, _ = run_arm("time-last", *RESTART_A[:3], max_requests=3, details=details)
+    run = record["pilot"]
+    assert [(a["input_tokens"], a["cached_tokens"], a["cache_write_tokens"]) for a in run["attempts"]] == [
+        (101, 0, 0), (102, 64, None), (103, 64, 32)]
+    assert run["reported_input_tokens"] == 306  # cache counts are part of input tokens, not added to them
+    # The read total stays known although one write count is missing; the write total does not.
+    assert run["reported_cached_tokens"] == 128 and run["reported_cache_write_tokens"] is None
+    assert not [key for key in run if any(word in key for word in ("cost", "price", "hit", "saving"))]
+    assert run["started_at_utc"].endswith("+00:00")  # wall-clock start, so trial order can be reconstructed
+
+
+@pytest.mark.parametrize("details, inconsistent", [
+    ({"cached_tokens": 60, "cache_write_tokens": 41}, False),  # 101 of 101: valid, no ordinary input left
+    ({"cached_tokens": 61, "cache_write_tokens": 41}, True),   # 102 of 101: each valid, the pair is not
+], ids=["sum-equals-input", "sum-exceeds-input"])
+def test_a_read_and_write_pair_above_input_tokens_is_unknown(details, inconsistent):
+    record, _ = run_arm("time-last", {"step": "tickets"}, max_requests=1, details=[details])
+    attempt, = record["pilot"]["attempts"]
+    expected = (None, None) if inconsistent else (details["cached_tokens"], details["cache_write_tokens"])
+    assert (attempt["cached_tokens"], attempt["cache_write_tokens"]) == expected
+    assert attempt["input_tokens"] == record["pilot"]["reported_input_tokens"] == 101
+    assert (record["pilot"]["reported_cached_tokens"], record["pilot"]["reported_cache_write_tokens"]) == expected
+
+
+@pytest.mark.parametrize("details", [..., None, "12", {"cached_tokens": None}, {"cached_tokens": "12"},
+                                     {"cached_tokens": -1}, {"cached_tokens": True}, {"cached_tokens": 1.5},
+                                     {"cached_tokens": 102}],
+                         ids=["no-details", "null-details", "string-details", "null", "string", "negative",
+                              "bool", "float", "more-than-input"])
+@pytest.mark.filterwarnings("ignore")  # the SDK warns about the deliberately invalid usage values
+def test_missing_or_invalid_cache_reads_stay_unknown(details):
+    record, _ = run_arm("time-last", {"step": "tickets"}, max_requests=1, details=[details])
+    run = record["pilot"]
+    assert run["attempts"][0]["input_tokens"] == 101 and run["attempts"][0]["cached_tokens"] is None
+    assert run["reported_input_tokens"] == 101 and run["reported_cached_tokens"] is None
+
+
+def test_offline_prefix_overlap_matches_the_issue_21_measurement():
+    """Scripted A-E decisions with the arm's layout: identical leading UTF-8 bytes of consecutive user JSON.
+    This reproduces the 13-pair byte check recorded on #21. It measures bytes, not tokens or cache hits."""
+    async def overlaps(position):
+        pairs = []
+        for path in demo.CASES.values():
+            sim, sent = demo.start_exchange(path), []
+
+            async def decide(context):
+                now = sim.clock.label(sim.state.tick)
+                sent.append(json.dumps(with_current_time(context, now, position)).encode())
+                return await demo.scripted(context)
+            identity = demo.identity_for(sim.scenario.actor["role"])
+            await demo.Shift(demo.IncidentDeps(demo.MeridianTools(sim, actor=identity["name"]),
+                                               identity=identity)).run(decide)
+            pairs += [next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
+                      for a, b in zip(sent, sent[1:])]
+        return pairs
+
+    first, last = asyncio.run(overlaps("first")), asyncio.run(overlaps("last"))
+    assert len(first) == len(last) == 13
+    assert (min(first), statistics.median(first), max(first)) == (21, 22, 22)
+    assert (min(last), statistics.median(last), max(last)) == (821, 920, 1315)

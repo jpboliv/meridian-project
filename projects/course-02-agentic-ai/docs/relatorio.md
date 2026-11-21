@@ -2,9 +2,13 @@
 
 Projeto Agentic AI · M1 testado offline (`gateway-m1.5`) · sem resultados com modelo real
 
-## Problema e pergunta
+## Pergunta
 
-O alerta diz «o gateway de ordens está lento». O agente tem de encontrar a causa sem reiniciar a instância errada nem inventar uma recuperação. Em modo real (`--live`), cada passo volta a enviar ao modelo as mesmas instruções; os resultados abaixo usam decisões programadas. Pergunta de prompt caching: **pôr a hora no fim do pedido, e não no início, aumenta a reutilização reportada pelo fornecedor e baixa o custo do incidente inteiro, sem piorar a decisão?** Um reinício errado mais barato conta como falha.
+O alerta diz «o gateway de ordens está lento». Em modo real, o agente reenvia ao modelo as mesmas instruções a cada passo. **Quando é que reutilizar contexto reduz o custo de investigar um incidente, e que evidência tem o agente de recolher de novo antes de agir?** Um reinício errado mais barato conta como falha.
+
+- **Cache do fornecedor ([#21](https://github.com/jpboliv/meridian-project/issues/21)).** Primeiro, a hora simulada no início contra a hora no fim. Com a hora no fim, o início do pedido repete-se e pode vir da cache. Depois, o mesmo pedido com a hora no fim, com a cache automática contra a cache desligada. Escrever na cache custa mais do que a entrada normal. As escritas só compensam se o incidente ficar mais barato com o mesmo resultado.
+- **Lembrete com fonte.** Runbook completo contra runbook com lembrete, em C (novo alvo: instância 1) e D (nova causa: ligação à base de dados); o lembrete não dispensa leituras atuais.
+- **Correção (teste proposto).** A latência começou a descer às 10:02 e o reinício foi às 10:05. Isto exclui que o reinício tenha iniciado a recuperação, não que tenha ajudado depois.
 
 ## Arquitetura
 
@@ -21,8 +25,10 @@ flowchart LR
     esperado["Resultado esperado"]
     veredito["Passou ou falhou"]
   end
-  subgraph PLAN["Planeado, ainda não implementado"]
-    cache["Comparação de prompt caching, #21"]
+  subgraph R21["#21: ligado, ainda sem medição"]
+    cache["Hora no início ou no fim; cache automática ou desligada"]
+  end
+  subgraph FUT["Futuro, ainda não implementado"]
     m2["M2: memória entre turnos"]
     m3["M3: líder, especialistas e retoma"]
   end
@@ -40,7 +46,7 @@ flowchart LR
   m3 -.-> codigo
 ```
 
-O decisor só propõe; a aprovação, o reinício único e a verificação de três leituras saudáveis ficam no código.
+O modelo só propõe; a aprovação, o reinício único e a verificação ficam no código.
 
 ```mermaid
 flowchart TD
@@ -50,26 +56,26 @@ flowchart TD
   inicio -- "D e E: ligação à base de dados degradada" --> ligacao["Passagem: investigar a ligação"]
 ```
 
-## Resultados
+## Evidência
 
-Medido: os cinco casos públicos passam, uma vez cada, com decisões programadas ([cinco registos](../first_line/offline-traces-m1.5.jsonl)). Por medir: o comportamento de um modelo real e a comparação de caching ([#8](https://github.com/jpboliv/meridian-project/issues/8), [#21](https://github.com/jpboliv/meridian-project/issues/21)).
+Os cinco casos passaram com decisões programadas ([registos](../first_line/offline-traces-m1.5.jsonl)). Ainda não há medições do fornecedor.
 
-**Reinício, caso A.** A instância 2 estava a 93,9 % de memória, com as ligações ativas. A aprovação APR-001 autorizou o reinício ACT-001 no tick 23. As leituras dos ticks 24 a 26 deram 6,5, 5,0 e 5,0 ms. O avaliador contou um efeito. [Registo A](../first_line/offline-traces-m1.5.jsonl#L1).
+**Reinício, caso A.** A instância 2 estava a 93,9 % de memória e as ligações ativas. Após o reinício aprovado (tick 23): 6,5, 5,0 e 5,0 ms. [Registo A](../first_line/offline-traces-m1.5.jsonl#L1).
 
-**Falha controlada, caso B.** O monitor não respondeu duas vezes à instância 1, por isso a instância 2 nunca foi lida. As ligações estavam ativas, mas não indicam qual instância tem memória alta. Sem reinício nem efeitos, o agente pediu leituras das duas instâncias. [Registo B](../first_line/offline-traces-m1.5.jsonl#L2).
+**Falha controlada, caso B.** O monitor falhou duas vezes na instância 1; a 2 nunca foi lida. Sem reinício, o agente pediu leituras das duas. [Registo B](../first_line/offline-traces-m1.5.jsonl#L2).
+
+**Prefixo, offline.** Em 13 pares de decisões seguidas, o JSON do utilizador partilha 22 bytes iniciais (mediana) com a hora no início e 920 com ela no fim. São bytes, não tokens: não mostram leituras da cache nem se o prefixo chega aos 1024 tokens exigidos ([notas](experiments.md#context-reuse-arms-prepared-offline)).
 
 ## Experimentar
 
-Na raiz do repositório, sem chave de API:
+Na raiz do repositório:
 
 ```sh
 uv run --locked streamlit run projects/course-02-agentic-ai/first_line/lab.py
 ```
 
-Escolha um caso de A a E e carregue em **Executar caso**. Abrir a página não executa nada.
+Escolha um caso de A a E e carregue em **Executar caso**.
 
 ## Utilização de IA
 
-Código, testes e documentos foram escritos com assistentes de IA, incluindo o Claude Code. O autor reviu as decisões marcadas como acordadas. Os resultados acima não usam nenhum modelo.
-
-Detalhes: [projeto](project.md), [arquitetura](architecture.md), [especificações](specs/), [decisões](decisions.md) e [experiências](experiments.md#case-b-the-replica-that-was-never-read).
+Escrito com assistentes de IA, incluindo o Claude Code; os resultados acima não usam nenhum modelo.

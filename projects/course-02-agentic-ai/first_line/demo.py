@@ -2,7 +2,7 @@
 
 With no options, all five cases run offline with scripted decisions. `--case` runs one case. `--live` asks
 the model named by OPENAI_MODEL for each decision in exactly one case, within explicit request and
-output-token limits.
+output-token limits. `--reuse-arm` selects an opt-in #21 request layout; without it the live request is unchanged.
 """
 
 import argparse
@@ -16,7 +16,7 @@ from meridian.agent_runtime import IncidentDeps, identity_for, require_api_key
 from meridian.scenarios import load_solution
 from meridian.tools import MeridianTools
 from case_checks import evaluate_case
-from pilot import Pilot, RequestCapStop
+from pilot import ARMS, Pilot, RequestCapStop
 from shift import Decision, MAX_DECISIONS, REVISION, Shift
 from workbench import start_exchange
 
@@ -47,8 +47,8 @@ async def run_case(path, pilot=None):
     Without a pilot the decisions are scripted. With one, a model decides within the pilot's limits.
     """
     calls = []
-    decide = pilot.decider(calls) if pilot else scripted
     sim = start_exchange(path)
+    decide = pilot.decider(calls, clock=lambda: sim.clock.label(sim.state.tick)) if pilot else scripted
     identity = identity_for(sim.scenario.actor["role"])
     tools = MeridianTools(sim, actor=identity["name"])
     shift = Shift(IncidentDeps(tools, identity=identity))
@@ -97,13 +97,17 @@ def parse_args(argv=None):
                         help="--live: provider requests allowed for the case, counting repairs and retries.")
     parser.add_argument("--max-output-tokens", type=positive,
                         help="--live: max_output_tokens sent with each request (a per-request limit).")
+    parser.add_argument("--reuse-arm", choices=list(ARMS),
+                        help="--live: a #21 arm. Adds the current simulated time first or last in each decision's "
+                             "user JSON; time-last-no-cache also turns off provider prompt caching (gpt-6-luna only). "
+                             "Omit for the baseline layout.")
     args = parser.parse_args(argv)
     limits = {"--max-requests": args.max_requests, "--max-output-tokens": args.max_output_tokens}
     if args.live:
         missing = [flag for flag, value in {"--case": args.case, **limits}.items() if not value]
         if missing:
             parser.error(f"--live runs one case with stated limits; also give {', '.join(missing)}")
-    elif given := [flag for flag, value in limits.items() if value is not None]:
+    elif given := [flag for flag, value in {**limits, "--reuse-arm": args.reuse_arm}.items() if value is not None]:
         parser.error(f"{', '.join(given)} only apply with --live")
     return args
 
@@ -121,7 +125,11 @@ async def main(argv=None):
     pilot = None
     if args.live:
         require_api_key()  # loads the local .env
-        pilot = Pilot(live_model(), max_requests=args.max_requests, max_output_tokens=args.max_output_tokens)
+        try:
+            pilot = Pilot(live_model(), max_requests=args.max_requests, max_output_tokens=args.max_output_tokens,
+                          arm=args.reuse_arm)
+        except ValueError as error:  # e.g. the no-cache arm on an unsupported model: no fallback, no request
+            raise SystemExit(str(error)) from None
     passed = True
     try:
         for path in [CASES[args.case]] if args.case else CASES.values():

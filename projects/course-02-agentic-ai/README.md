@@ -11,7 +11,7 @@ It grows in three milestones:
 
 Start with the [project goals](docs/project.md) and [reference incident](docs/reference-incident.md). Follow the [roadmap](../../ROADMAP.md) for milestone outcomes.
 
-For the class presentation, use [the short report in Portuguese](docs/relatorio.md): the caching question, the architecture, one verified restart and one controlled failure with their `gateway-m1.5` traces, and what remains unmeasured.
+For the class presentation, use [the short report in Portuguese](docs/relatorio.md): the context-reuse question, the architecture, one verified restart and one controlled failure with their `gateway-m1.5` traces, and what remains unmeasured.
 
 ## Run the first-line cases
 
@@ -34,7 +34,24 @@ uv run --locked python projects/course-02-agentic-ai/first_line/demo.py --live -
 
 The case and both limits are checked first. Then `OPENAI_API_KEY` and `OPENAI_MODEL` are read from the local `.env` or the environment. A missing or blank `OPENAI_MODEL` stops the run before any client is built; there is no fallback to the course default. `--max-requests` caps HTTP requests to the provider for the case. Decisions, output repairs, and SDK retries all count. SDK retries are off. When the cap is reached, the next request is refused before it is sent. The agent then hands over with “Provider request cap reached”, without any effect or recovery claim. `--max-output-tokens` is sent as `max_output_tokens` with **each** request, so the case produces at most `MAX_REQUESTS × MAX_OUTPUT_TOKENS` output tokens. Input tokens are measured, not capped. The trace's `pilot` field records the limits, the configured model, and each request's HTTP status. It also records the model and token usage the provider reported. Usage that was not reported stays `null`, also in `completed_model_calls`. It is never counted as zero, and no cost is calculated. The client is closed when the run ends, including after an error. The [offline pilot tests](first_line/test_pilot.py) use a mock HTTP transport.
 
-The model chooses reads and proposes an action. Code controls the approval, dispatch, and recovery report. Only the evaluator reads `first_line/checks/`. Cases A, C, and D form the three-shift story. B has missing readings; in [E the monitor answers with old readings](docs/experiments.md#case-e-the-healthy-but-stale-monitor). Each starts without memory. These runs do not measure provider cache reuse, cross-shift recall, or worker replacement.
+The trace's `pilot` field also records, for each HTTP attempt, the provider-reported `usage.input_tokens_details.cached_tokens` (cache reads) and `cache_write_tokens`. The case totals `reported_cached_tokens` and `reported_cache_write_tokens` are computed independently. A reported 0 stays 0. A missing, invalid, or failed report is `null`, which makes that case total `null`. The OpenAI guide (linked below) describes reads and writes as disjoint subsets of `reported_input_tokens`, so they are never added to it. A pair whose sum exceeds the attempt's input tokens is recorded as `null` for both. There is no price, cost, or hit field. `started_at_utc` records when the run started, which gives the trial order. Source: [OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching).
+
+### Context-reuse arms for #21 (opt-in)
+
+Add `--reuse-arm` to a bounded live command to run one [#21](https://github.com/jpboliv/meridian-project/issues/21) arm. Without it, the live request is the unchanged baseline.
+
+| `--reuse-arm` | User JSON for each decision | `prompt_cache_options` sent |
+|---|---|---|
+| (omitted) | Baseline, with no `current_time` | Not sent |
+| `time-first` | `current_time` first | Not sent (provider default, implicit) |
+| `time-last` (shared control) | `current_time` last | Not sent (provider default, implicit) |
+| `time-last-no-cache` | Same as `time-last` | `{"mode": "explicit"}`, with no `prompt_cache_breakpoint` |
+
+`current_time` is the simulated clock (`HH:MM`), read once when each decision starts. An output repair resends the same value. The incident's own `time`, the observations, the instructions, the tools, the clock, and the limits are unchanged. According to the [OpenAI guide](https://developers.openai.com/api/docs/guides/prompt-caching#choose-a-caching-mode), explicit mode with no breakpoints turns off cache reads and writes. The arm is accepted only when `OPENAI_MODEL` is exactly `gpt-6-luna` (Responses API). Any other name, including a dated or lookalike one, stops the run before a client is built, with no fallback to default caching. If the provider rejects the setting, the attempt records its status and `null` cache usage. The agent hands over (“Model unavailable”), and the request is not resent without the setting. No cache key, retention, TTL, prewarm, or tool-result cache is used. Requests are fully identical across arms only when the decisions are identical. In a live run, the model's choices can differ, so later requests can diverge.
+
+The [experiment log](docs/experiments.md#context-reuse-arms-prepared-offline) is the run protocol. It covers cost accounting, arm order and cache warmth, and the mocked-wire evidence.
+
+The model chooses reads and proposes an action. Code controls the approval, dispatch, and recovery report. Only the evaluator reads `first_line/checks/`. Cases A, C, and D form the three-shift story. B has missing readings; in [E the monitor answers with old readings](docs/experiments.md#case-e-the-healthy-but-stale-monitor). Each starts without memory. A live run records provider-reported cache usage, but one run is not a reuse comparison. These runs do not measure cross-shift recall or worker replacement.
 
 ## Run one case in the lab
 
