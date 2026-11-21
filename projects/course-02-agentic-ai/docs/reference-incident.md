@@ -1,6 +1,6 @@
 # Reference incident
 
-Draft case plan · [Issue 2](https://github.com/jpboliv/meridian-agents/issues/2). The owner agreed on the shift inputs and missing-reading rule. The [three-shift simulator rehearsal](experiments.md#three-shifts-without-memory) used scripted decisions and a fresh start each shift. The live model and memory comparisons have no results yet.
+Draft case plan · [Issue 2](https://github.com/jpboliv/meridian-project/issues/2). The owner agreed on the shift inputs and missing-reading rule. The [three-shift simulator rehearsal](experiments.md#three-shifts-without-memory) used scripted decisions and a fresh start each shift. The live model and memory comparisons have no results yet.
 
 1. A gateway instance slows down. The operator authorizes a mitigation and records which readings confirmed recovery.
 2. The symptoms return on a different instance. Recall suggests where to look. The agent must identify the affected instance from fresh observations.

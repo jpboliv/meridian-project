@@ -30,7 +30,7 @@ The next shift inherits the question “Which instance has high memory use?” I
 
 ## What is settled and what is ready for review
 
-Agreed means the owner reviewed the decision. This covers the shift inputs, the evidence for a lesson, corrections, source deletion, shortened handovers, and the main comparison measures. The [handover decision](https://github.com/jpboliv/meridian-agents/issues/5#issuecomment-6976560131) and [deletion decision](https://github.com/jpboliv/meridian-agents/issues/6#issuecomment-7008518875) record two examples.
+Agreed means the owner reviewed the decision. This covers the shift inputs, the evidence for a lesson, corrections, source deletion, shortened handovers, and the main comparison measures. The [handover decision](https://github.com/jpboliv/meridian-project/issues/5#issuecomment-7064320942) and [deletion decision](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7064322243) record two examples.
 
 Draft means that the owner delegated the choice and can review it here. The draft sets defaults for all eleven design issues. These include who can share a lesson, how many calls a shift gets, and when a worker can retry. Implemented means working project behavior with evidence. No project milestone has that status.
 

@@ -1,6 +1,6 @@
 # Information ownership
 
-Draft for owner review · [Issue 3](https://github.com/jpboliv/meridian-agents/issues/3).
+Draft for owner review · [Issue 3](https://github.com/jpboliv/meridian-project/issues/3).
 
 Alert → select evidence → investigate → authorize a specific action → execute once → measure again → report.
 
