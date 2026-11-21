@@ -21,9 +21,20 @@ From the repository root:
 uv run --locked python projects/course-02-agentic-ai/first_line/demo.py
 ```
 
-This starts a fresh simulator for each case. The offline driver follows a fixed read order and chooses a target from the readings. MCP services, approvals, actions, recovery readings, and the course evaluator run locally. Each output line is a JSON trace. The command exits with a failure if any case fails. The [experiment log](docs/experiments.md#m1-grader-controls) shows what the graders accept and reject.
+This starts a fresh simulator for each case. The offline driver follows a fixed read order and chooses a target from the readings. MCP services, approvals, actions, recovery readings, and the course evaluator run locally. Each output line is a JSON trace. The command exits with a failure if any case fails. The [experiment log](docs/experiments.md#m1-grader-controls) shows what the graders accept and reject. Add `--case B` (A–E) to run one case.
 
-The current `--live` switch runs **all five cases** using `OPENAI_API_KEY` from the local `.env`. Use the offline command above during development. Review the single-case pilot and its limits in [#8](https://github.com/jpboliv/meridian-project/issues/8) before a paid run. The default model is `gpt-4.1-mini`; `OPENAI_MODEL` selects another. The model chooses reads and proposes an action. Code controls the approval, dispatch, and recovery report. Only the evaluator reads `first_line/checks/`. Cases A, C, and D form the three-shift story. B has missing readings; in [E the monitor answers with old readings](docs/experiments.md#case-e-the-healthy-but-stale-monitor). Each starts without memory. These runs do not measure provider cache reuse, cross-shift recall, or worker replacement.
+### One bounded live case
+
+`--live` asks the model named by `OPENAI_MODEL` for each decision in **one** case. It is a paid run: the owner decides the model, limits, and spending in [#8](https://github.com/jpboliv/meridian-project/issues/8) before anyone runs it. The command has no default limits, and it never runs all cases:
+
+```sh
+uv run --locked python projects/course-02-agentic-ai/first_line/demo.py --live --case A \
+  --max-requests "$MAX_REQUESTS" --max-output-tokens "$MAX_OUTPUT_TOKENS"
+```
+
+The case and both limits are checked first. Then `OPENAI_API_KEY` and `OPENAI_MODEL` are read from the local `.env` or the environment. A missing or blank `OPENAI_MODEL` stops the run before any client is built; there is no fallback to the course default. `--max-requests` caps HTTP requests to the provider for the case. Decisions, output repairs, and SDK retries all count. SDK retries are off. When the cap is reached, the next request is refused before it is sent. The agent then hands over with “Provider request cap reached”, without any effect or recovery claim. `--max-output-tokens` is sent as `max_output_tokens` with **each** request, so the case produces at most `MAX_REQUESTS × MAX_OUTPUT_TOKENS` output tokens. Input tokens are measured, not capped. The trace's `pilot` field records the limits, the configured model, and each request's HTTP status. It also records the model and token usage the provider reported. Usage that was not reported stays `null`, also in `completed_model_calls`. It is never counted as zero, and no cost is calculated. The client is closed when the run ends, including after an error. The [offline pilot tests](first_line/test_pilot.py) use a mock HTTP transport.
+
+The model chooses reads and proposes an action. Code controls the approval, dispatch, and recovery report. Only the evaluator reads `first_line/checks/`. Cases A, C, and D form the three-shift story. B has missing readings; in [E the monitor answers with old readings](docs/experiments.md#case-e-the-healthy-but-stale-monitor). Each starts without memory. These runs do not measure provider cache reuse, cross-shift recall, or worker replacement.
 
 ## Run one case in the lab
 
