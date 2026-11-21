@@ -16,7 +16,7 @@ from meridian.mcp_servers import build_servers
 
 GATEWAY = "order-gateway"
 MAX_DECISIONS = 8
-REVISION = "gateway-m1.5"
+REVISION = "gateway-m1.6"
 
 
 class Decision(BaseModel):
@@ -85,6 +85,9 @@ class Shift:
         self.observations = {}
         self.decisions = []
         self.last_read_tick = {}
+        # step -> investigation steps finished, one per successful `investigate` call. Not MCP attempts: a step can
+        # retry a tool or read several replicas.
+        self.completed_steps = {}
         self.action = None
 
     async def read(self, server, tool, args, schema):
@@ -141,6 +144,14 @@ class Shift:
                                  "source": f"monitoring.get_instance_datapoints/{instance}/{call.tick}"}
         return samples
 
+    def progress(self):
+        """What the harness has already done, for the next decision: the ticket state and a count per step.
+        Facts only: it names no next step and blocks no read. `matched` needs a validated ticket for this incident;
+        a completed search that kept none is `no match`, distinct from `not searched`."""
+        tickets = self.observations.get("tickets")
+        ticket = "not searched" if tickets is None else "matched" if tickets else "no match"
+        return {"ticket": ticket, "completed_steps": dict(self.completed_steps)}
+
     def handover(self, reason):
         return self.report("needs_operator", reason)
 
@@ -194,8 +205,9 @@ class Shift:
             return self.handover("Read the applicable gateway runbook.")
         for _ in range(MAX_DECISIONS):
             try:
+                # `progress` comes last, after the stable prefix: the #21 arms add `current_time` before or after it.
                 decision = await decide({"incident": self.brief, "role": self.deps.role, "runbook": runbook["text"],
-                                         "observations": self.observations})
+                                         "observations": self.observations, "progress": self.progress()})
             except (AgentRunError, ModelAPIError):
                 return self.handover("Model unavailable or invalid decision after repair. Review the saved evidence.")
             self.decisions.append(decision.model_dump())
@@ -217,6 +229,7 @@ class Shift:
             try:
                 self.observations[step] = await self.investigate(step)
                 self.last_read_tick[step] = self.tools.trace[-1].tick
+                self.completed_steps[step] = self.completed_steps.get(step, 0) + 1
             except ReadingMissing as error:
                 self.observations.pop(step, None)
                 if error.samples:
@@ -243,7 +256,11 @@ class Shift:
 def live_decider(model, calls):
     agent = Agent(model, output_type=Decision, retries=1, instructions=(
         "Handle the gateway alert. Select the next read: tickets, instances, or links. "
-        "Start by correlating the ticket. Apply the supplied runbook. "
+        "progress.ticket is \"not searched\", \"matched\", or \"no match\". If it is \"not searched\", search tickets first. "
+        "\"matched\" means ticket correlation is complete. \"no match\" means the ticket evidence is missing, "
+        "not that you must keep searching. Use the supplied runbook to choose a useful next read, or hand over. "
+        "progress.completed_steps counts finished investigation steps, whose results are in observations; "
+        "repeat a step only when you need a newer result. "
         "A stale sample is historical evidence. Seek an independent current reading before acting. "
         "Request restart only for a supported instance, otherwise hand over. "
         "When handing over a faulty link, put the observed dependency in target. "

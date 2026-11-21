@@ -1,6 +1,6 @@
 # Meridian: o agente de primeira linha
 
-Projeto Agentic AI · M1 testado offline (`gateway-m1.5`) · um piloto real (caso B, falhou), sem linha de base
+Projeto Agentic AI · M1 testado offline (`gateway-m1.6`) · um piloto real em `gateway-m1.5` (caso B, falhou), sem linha de base
 
 ## Pergunta
 
@@ -58,13 +58,13 @@ flowchart TD
 
 ## Evidência
 
-Os cinco casos passaram com decisões programadas ([registos](../first_line/offline-traces-m1.5.jsonl)). Com modelo real houve apenas um piloto, no caso B (ver abaixo).
+Os cinco casos passaram com decisões programadas em `gateway-m1.6`, com os mesmos resultados de `gateway-m1.5` ([registos](../first_line/offline-traces-m1.6.jsonl)). Com modelo real houve apenas um piloto, no caso B, ainda em `gateway-m1.5` (ver abaixo).
 
-**Reinício, caso A.** A instância 2 estava a 93,9 % de memória e as ligações ativas. Após o reinício aprovado (tick 23): 6,5, 5,0 e 5,0 ms. [Registo A](../first_line/offline-traces-m1.5.jsonl#L1).
+**Reinício, caso A.** A instância 2 estava a 93,9 % de memória e as ligações ativas. Após o reinício aprovado (tick 23): 6,5, 5,0 e 5,0 ms. [Registo A](../first_line/offline-traces-m1.6.jsonl#L1).
 
-**Falha controlada, caso B (programado).** O monitor falhou duas vezes na instância 1; a 2 nunca foi lida. Sem reinício, o agente pediu leituras das duas. [Registo B](../first_line/offline-traces-m1.5.jsonl#L2).
+**Falha controlada, caso B (programado).** O monitor falhou duas vezes na instância 1; a 2 nunca foi lida. Sem reinício, o agente pediu leituras das duas. [Registo B](../first_line/offline-traces-m1.6.jsonl#L2).
 
-**Piloto real, caso B (21 nov. 2026), distinto do B programado.** Numa única execução com `gpt-6-luna`, o modelo pesquisou os tickets três vezes, mesmo com o MRX-4100 já encontrado. Nunca leu o monitor nem a ligação, e o avaliador deu falha nessas verificações. Passou ao operador sem efeitos. Não é linha de base nem resultado do #21; a causa está por apurar. [Registo do piloto](../first_line/live-pilot-b-2026-11-21.jsonl#L1).
+**Piloto real, caso B (21 nov. 2026, `gateway-m1.5`), distinto do B programado.** Numa única execução com `gpt-6-luna`, o modelo pesquisou os tickets três vezes, mesmo com o MRX-4100 já encontrado. Nunca leu o monitor nem a ligação, e o avaliador deu falha nessas verificações. Passou ao operador sem efeitos. Não é linha de base nem resultado do #21; a causa está por apurar. [Registo do piloto](../first_line/live-pilot-b-2026-11-21.jsonl#L1). Numa reconstrução offline, o segundo e o terceiro pedidos saíram idênticos e mantinham a instrução de começar pelo ticket; a revisão `gateway-m1.6` torna essa correlação condicional, mas ainda não foi testada com o modelo real ([registo offline](experiments.md#2026-11-21-the-completed-ticket-read-offline-gateway-m16)).
 
 **Prefixo, offline.** Em 13 pares de decisões seguidas, o JSON do utilizador partilha 22 bytes iniciais (mediana) com a hora no início e 920 com ela no fim. São bytes, não tokens: não mostram leituras da cache nem se o prefixo chega aos 1024 tokens exigidos ([notas](experiments.md#context-reuse-arms-prepared-offline)).
 

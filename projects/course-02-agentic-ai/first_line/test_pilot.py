@@ -9,6 +9,7 @@ import statistics
 
 import httpx2
 import pytest
+from meridian.scenarios import load_scenario
 from openai import AsyncOpenAI, APIStatusError
 
 import demo
@@ -95,11 +96,15 @@ def test_invalid_live_command_stops_before_any_key_or_client(argv, monkeypatch):
 
 
 def test_offline_runs_all_five_cases_or_one_unchanged(capsys):
-    recorded = (demo.HERE / "offline-traces-m1.5.jsonl").read_text(encoding="utf-8").splitlines()
+    recorded = (demo.HERE / "offline-traces-m1.6.jsonl").read_text(encoding="utf-8").splitlines()
     assert asyncio.run(demo.main([])) == 0
     assert capsys.readouterr().out.splitlines() == recorded
     assert asyncio.run(demo.main(["--case", "b"])) == 0
     assert capsys.readouterr().out.splitlines() == [line for line in recorded if '"case": "shift-b"' in line]
+    # m1.6 changed only the decision context and live instructions: scripted runs keep every m1.5 outcome.
+    earlier = (demo.HERE / "offline-traces-m1.5.jsonl").read_text(encoding="utf-8").splitlines()
+    strip = lambda line: {k: v for k, v in json.loads(line).items() if k not in ("revision", "harness_sha256")}
+    assert [strip(line) for line in recorded] == [strip(line) for line in earlier]
 
 
 def live_main(monkeypatch, argv, fake, env_model):
@@ -395,3 +400,69 @@ def test_offline_prefix_overlap_matches_the_issue_21_measurement():
     assert len(first) == len(last) == 13
     assert (min(first), statistics.median(first), max(first)) == (21, 22, 22)
     assert (min(last), statistics.median(last), max(last)) == (821, 920, 1315)
+
+
+# --- #13: what each live decision sees after the ticket read (gateway-m1.6) ----------------------------------
+# The mock replays chosen decisions. A mocked pass shows what the harness permits, not what a model would choose.
+
+def sent_progress(fake):
+    return [json.loads(user_json(body))["progress"] for body in fake.bodies]
+
+
+TICKET_STATES = ("not searched", "matched", "no match")
+
+
+def test_recorded_pilot_choices_now_see_the_matched_ticket_and_still_fail():
+    """The 21 November pilot's three `tickets` choices, replayed under its limits (cap 3, 512 output tokens)."""
+    fake = FakeResponses(*[{"step": "tickets"}] * 4)
+    record = asyncio.run(demo.run_case(demo.CASES["B"], pilot_with(fake, 3, 512, model=LUNA)))
+    assert len(fake.bodies) == 3
+    for body in fake.bodies:
+        # The rule, not its wording: no unconditional "start with the ticket", and every cue state is explained.
+        assert "Start by correlating" not in body["instructions"]
+        assert all(f'"{state}"' in body["instructions"] for state in TICKET_STATES)
+        assert list(json.loads(user_json(body)))[-1] == "progress"  # after the stable prefix and observations
+    assert sent_progress(fake) == [
+        {"ticket": "not searched", "completed_steps": {}},
+        {"ticket": "matched", "completed_steps": {"tickets": 1}},
+        {"ticket": "matched", "completed_steps": {"tickets": 2}}]
+    assert user_json(fake.bodies[1]) != user_json(fake.bodies[2])  # byte-identical under m1.5
+    # Nothing routes the run: repeated choices are executed, spend the cap, and the case still fails.
+    assert [d["step"] for d in record["decisions"]] == ["tickets"] * 3
+    assert record["pilot"]["requests_refused"] == 1 and not record["passed"] and record["applied_effects"] == 0
+    assert record["report"]["next_step"].startswith("Provider request cap reached (3 requests sent).")
+
+
+@pytest.mark.parametrize("steps", [("tickets", "instances"), ("tickets", "links", "instances")],
+                         ids=["monitor-next", "link-next"])
+def test_an_alternate_next_read_proceeds_within_the_same_cap(steps):
+    fake = FakeResponses(*[{"step": step} for step in steps])
+    record = asyncio.run(demo.run_case(demo.CASES["B"], pilot_with(fake, 3, 512, model=LUNA)))
+    assert [d["step"] for d in record["decisions"]] == list(steps) and record["pilot"]["requests_refused"] == 0
+    assert record["passed"] and record["applied_effects"] == 0  # mocked choices: not model evidence
+    assert all(p["ticket"] == "matched" for p in sent_progress(fake)[1:])
+    assert record["report"]["follow_up"]["targets"] == ["order-gateway-1", "order-gateway-2"]
+    if "links" in steps[:-1]:  # one completed links step, although it made two check_link calls
+        assert sent_progress(fake)[-1] == {"ticket": "matched", "completed_steps": {"tickets": 1, "links": 1}}
+        tools = [row["tool"] for row in record["reads_and_actions"]]
+        assert tools[:tools.index("deployments.get_service")].count("check_link") == 2
+
+
+@pytest.mark.parametrize("tickets", [[], [{"at": 14, "key": "MRX-4101", "component": "order-gateway",
+                                          "summary": "New operator access request"}]],
+                         ids=["no-tickets", "unrelated-ticket"])
+def test_an_empty_or_unmatched_search_is_not_called_matched_and_can_be_repeated(tickets):
+    case = load_scenario(demo.CASES["B"])
+    case.tickets = tickets
+    sim = demo.start_exchange(case)
+    identity = demo.identity_for(sim.scenario.actor["role"])
+    shift = demo.Shift(demo.IncidentDeps(demo.MeridianTools(sim, actor=identity["name"]), identity=identity))
+    fake = FakeResponses({"step": "tickets"}, {"step": "tickets"}, {"step": "handover"})
+    report = asyncio.run(shift.run(pilot_with(fake, 3, 512, model=LUNA).decider([])))
+    assert report["observations"]["tickets"] == []
+    assert sent_progress(fake) == [
+        {"ticket": "not searched", "completed_steps": {}},
+        {"ticket": "no match", "completed_steps": {"tickets": 1}},
+        {"ticket": "no match", "completed_steps": {"tickets": 2}}]
+    assert sum(c.tool == "tickets.search_issues" for c in shift.tools.trace) == 2  # the repeat was not blocked
+    assert report["status"] == "needs_operator" and not sim.executor.effects()
