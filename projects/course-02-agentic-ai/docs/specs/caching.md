@@ -6,7 +6,7 @@ A runbook gives instructions for a service. Before reusing a saved copy, make su
 
 Draft for owner review · [Issue 7](https://github.com/jpboliv/meridian-project/issues/7).
 
-The class deep dive compares provider prompt caching with a changing timestamp at the start or end of each request. Use fresh readings in both versions. Application caches for tool results and summaries are optional and stay off for this experiment and the separate memory comparison.
+The class deep dive compares provider prompt caching with a changing timestamp at the start or end of each request. It also compares the end layout with caching off ([run protocol](../experiments.md#context-reuse-arms-prepared-offline)). Use fresh readings in every version. Application caches for tool results and summaries are optional and stay off for this experiment and the separate memory comparison.
 
 A cache is a temporary copy of an earlier result. A hit means that the system used the copy instead of reading its source again.
 
