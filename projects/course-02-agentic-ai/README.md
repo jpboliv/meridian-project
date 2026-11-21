@@ -40,14 +40,16 @@ The trace's `pilot` field also records, for each HTTP attempt, the provider-repo
 
 Add `--reuse-arm` to a bounded live command to run one [#21](https://github.com/jpboliv/meridian-project/issues/21) arm. Without it, the live request is the unchanged baseline.
 
-| `--reuse-arm` | User JSON for each decision | `prompt_cache_options` sent |
+| `--reuse-arm` | User JSON for each decision | Cache mode configured by Meridian |
 |---|---|---|
-| (omitted) | Baseline, with no `current_time` | Not sent |
-| `time-first` | `current_time` first | Not sent (provider default, implicit) |
-| `time-last` (shared control) | `current_time` last | Not sent (provider default, implicit) |
+| (omitted) | Baseline, with no `current_time` | None |
+| `time-first` | `current_time` first | None (provider default, implicit) |
+| `time-last` (shared control) | `current_time` last | None (provider default, implicit) |
 | `time-last-no-cache` | Same as `time-last` | `{"mode": "explicit"}`, with no `prompt_cache_breakpoint` |
 
-`current_time` is the simulated clock (`HH:MM`), read once when each decision starts. An output repair resends the same value. The incident's own `time`, the observations, the instructions, the tools, the clock, and the limits are unchanged. According to the [OpenAI guide](https://developers.openai.com/api/docs/guides/prompt-caching#choose-a-caching-mode), explicit mode with no breakpoints turns off cache reads and writes. The arm is accepted only when `OPENAI_MODEL` is exactly `gpt-6-luna` (Responses API). Any other name, including a dated or lookalike one, stops the run before a client is built, with no fallback to default caching. If the provider rejects the setting, the attempt records its status and `null` cache usage. The agent hands over (“Model unavailable”), and the request is not resent without the setting. No cache key, retention, TTL, prewarm, or tool-result cache is used. Requests are fully identical across arms only when the decisions are identical. In a live run, the model's choices can differ, so later requests can diverge.
+On an output repair, the SDK can add a diagnostic `comparison_response_id` to `prompt_cache_options` in any arm. It is not a breakpoint and does not change the cache policy. With fixed decisions, `time-last` and `time-last-no-cache` send the same substantive model-visible inputs; independent live runs can diverge.
+
+`current_time` is the simulated clock (`HH:MM`), read once when each decision starts. An output repair resends the same value. The incident's own `time`, the observations, the instructions, the tools, the clock, and the limits are unchanged. According to the [OpenAI guide](https://developers.openai.com/api/docs/guides/prompt-caching#choose-a-caching-mode), explicit mode with no breakpoints turns off cache reads and writes. The arm is accepted only when `OPENAI_MODEL` is exactly `gpt-6-luna` (Responses API). Any other name, including a dated or lookalike one, stops the run before a client is built, with no fallback to default caching. If the provider rejects the setting, the attempt records its status and `null` cache usage. The agent hands over (“Model unavailable”), and the request is not resent without the setting. No cache key, retention, TTL, prewarm, or tool-result cache is used.
 
 The [experiment log](docs/experiments.md#context-reuse-arms-prepared-offline) is the run protocol. It covers cost accounting, arm order and cache warmth, and the mocked-wire evidence.
 

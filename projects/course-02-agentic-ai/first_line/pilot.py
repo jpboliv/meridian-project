@@ -14,9 +14,12 @@ them as disjoint subsets of `input_tokens`, so they are never added to it. A mis
 failed report stays unknown (`None`), and no price is applied.
 
 Without an arm, requests use the baseline layout. Each opt-in #21 arm (`ARMS`) adds the current simulated time
-first or last in each decision's user JSON. `time-last-no-cache` sends the same request as `time-last` with
-`prompt_cache_options={"mode": "explicit"}` and no breakpoint, which turns off cache reads and writes. It is
-accepted only for the exact model name `gpt-6-luna` on the Responses API.
+first or last in each decision's user JSON. The only cache mode Meridian configures is `time-last-no-cache`:
+`prompt_cache_options={"mode": "explicit"}` with no breakpoint, which turns off cache reads and writes. It is
+accepted only for the exact model name `gpt-6-luna` on the Responses API. On an output repair the SDK can add a
+diagnostic `comparison_response_id` to `prompt_cache_options` in any arm; it is not a breakpoint or a change of
+cache policy. A fixed-decision replay sends the same substantive model-visible inputs in `time-last` and
+`time-last-no-cache`; independent live trajectories can differ.
 """
 
 from __future__ import annotations
