@@ -4,7 +4,7 @@
 
 Run the same three shifts with memory off and on. For each incident, count how often each version makes the right decision and can show why. Then compare costs.
 
-Draft protocol for owner review · [Issue 8](https://github.com/jpboliv/meridian-agents/issues/8). The metrics and adoption blockers below are Agreed.
+Draft protocol for owner review · [Issue 8](https://github.com/jpboliv/meridian-project/issues/8). The metrics and adoption blockers below are Agreed.
 
 Compare versions on the same starting state. Reset memory between independent trials and preserve it across shifts within a trial. Record per-case outcomes, effects, source calls, and model usage.
 

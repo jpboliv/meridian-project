@@ -4,7 +4,7 @@
 
 First, find out whether this person has permission to restart the service. If this restart also needs approval, ask for it before proceeding.
 
-Draft for owner review · [Issue 9](https://github.com/jpboliv/meridian-agents/issues/9).
+Draft for owner review · [Issue 9](https://github.com/jpboliv/meridian-project/issues/9).
 
 The harness takes the requester, role, and team from the authenticated run. Never take them from ticket text. Effective access is the intersection of the requester's rights, the agent role, and the service credential. Approval cannot add a missing right.
 

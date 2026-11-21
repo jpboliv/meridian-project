@@ -4,7 +4,7 @@
 
 A runbook gives instructions for a service. Before reusing a saved copy, make sure that it covers the current version and the reader can access it.
 
-Draft for owner review · [Issue 7](https://github.com/jpboliv/meridian-agents/issues/7).
+Draft for owner review · [Issue 7](https://github.com/jpboliv/meridian-project/issues/7).
 
 The class deep dive compares provider prompt caching with a changing timestamp at the start or end of each request. Use fresh readings in both versions. Application caches for tool results and summaries are optional and stay off for this experiment and the separate memory comparison.
 

@@ -1,10 +1,12 @@
 # Current focus
 
+The [tracker and milestones](https://github.com/jpboliv/meridian-project/milestones) now live beside the code in the private repository. [PR #1](https://github.com/jpboliv/meridian-project/pull/1) holds the M1 implementation under review.
+
 First-line implementation. All five [public development cases](projects/course-02-agentic-ai/docs/experiments.md#m1-grader-controls) pass with scripted decisions under `gateway-m1.4`. The A/C reports match three healthy readings after the applied restart. B hands over after two timeouts on the same instance and a fresh link check. D and E cite the degraded link and have no effects. No live-model baseline yet.
 
 Resume here (21 November): review the [M1 milestone pull request](https://github.com/jpboliv/meridian-project/pull/1) against the [grader controls](projects/course-02-agentic-ai/first_line/test_case_checks.py) and [five offline traces](projects/course-02-agentic-ai/first_line/offline-traces-m1.4.jsonl). All 17 project tests pass. Next, add and test a single-case pilot with request and output limits. The current `--live` command runs all five cases.
 
-The [budget proposal](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7063836523) uses `gpt-6-luna` on the Responses API. Review the run settings and offline evidence before spending on the pilot. A separate Decisions API trial could test specialist routing after M1.
+The [budget proposal](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7064323088) uses `gpt-6-luna` on the Responses API. Review the run settings and offline evidence before spending on the pilot. A separate Decisions API trial could test specialist routing after M1.
 
 Owner clarified the [reuse scope](projects/course-02-agentic-ai/docs/architecture.md#tool-boundary): new tools and cases are in scope. Extend the simulator when an experiment needs behavior it cannot currently represent.
 
@@ -12,7 +14,7 @@ All eleven design topics have drafts. Agreement on individual rules does not app
 
 The owner agreed on the [shift inputs and trial reset](projects/course-02-agentic-ai/docs/reference-incident.md#agreed-handover), the [evidence needed to save a clue](projects/course-02-agentic-ai/docs/specs/memory.md#agreed-handover-evidence), and [when a lesson applies](projects/course-02-agentic-ai/docs/specs/memory.md#agreed-when-a-lesson-applies). Check the prerequisite against current evidence, not the version number alone.
 
-Use the [dated roadmap](ROADMAP.md#delivery-order) for the delivery sequence. The next decision is [baseline review #8](https://github.com/jpboliv/meridian-agents/issues/8). [Experiment #21](https://github.com/jpboliv/meridian-agents/issues/21) tracks provider prompt caching and verified outcomes separately from the optional tool-result cache in #16.
+Use the [dated roadmap](ROADMAP.md#delivery-order) for the delivery sequence. The next decision is [baseline review #8](https://github.com/jpboliv/meridian-project/issues/8). [Experiment #21](https://github.com/jpboliv/meridian-project/issues/21) tracks provider prompt caching and verified outcomes separately from the optional tool-result cache in #16.
 
 The owner confirmed the submission deadline: 30 November 2026 at 23:59 Lisbon time (`Europe/Lisbon`).
 

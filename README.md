@@ -4,7 +4,7 @@ How can an on-call agent use yesterday's incident to investigate faster without 
 
 Start with the [short explanation for Luís](projects/course-02-agentic-ai/docs/design-review.md#the-short-version-for-luís). After cloning the repository, open `projects/course-02-agentic-ai/docs/decision-report.html` in a browser for the full report. The [project guide](projects/course-02-agentic-ai/README.md) links to its editable sources.
 
-See the [roadmap](ROADMAP.md) and [current focus](STATUS.md) for the milestone plan.
+The private [meridian-project repository](https://github.com/jpboliv/meridian-project) holds the code, [issues](https://github.com/jpboliv/meridian-project/issues), and [milestone reviews](https://github.com/jpboliv/meridian-project/milestones). See the [roadmap](ROADMAP.md) and [current focus](STATUS.md) for the milestone plan.
 
 ## Generative AI course materials
 

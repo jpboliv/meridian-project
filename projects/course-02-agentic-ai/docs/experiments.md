@@ -36,7 +36,7 @@ The grader matches both sources against successful tool calls and checks the cho
 
 ## M1 grader controls
 
-21 November 2026, `gateway-m1.4`. Can skipping an investigation look cheaper and still earn a pass? The [earlier review](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7012432837) found that it could. We tested the [agreed delivery criteria](project.md#agreed-delivery-priorities) against real tool calls and executor receipts.
+21 November 2026, `gateway-m1.4`. Can skipping an investigation look cheaper and still earn a pass? The [earlier review](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7064322943) found that it could. We tested the [agreed delivery criteria](project.md#agreed-delivery-priorities) against real tool calls and executor receipts.
 
 | Case | What happened in the scripted run | What the grader now distinguishes |
 |---|---|---|

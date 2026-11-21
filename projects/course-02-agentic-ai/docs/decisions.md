@@ -2,18 +2,19 @@
 
 | Decision | Reason |
 |---|---|
-| Agreed, 19 Nov 2026 ([#3](https://github.com/jpboliv/meridian-agents/issues/3)): reuse the Meridian simulator as a starting point. We can add tools and cases, and change the simulator when an experiment warrants it. | The simulated exchange makes trials repeatable. Its existing tool catalog and fault models do not limit the questions we can test. |
+| Agreed, 21 Nov 2026: keep code, issues, milestones and review PRs in the private `jpboliv/meridian-project` repository. | A PR and its issues can now share a GitHub milestone. The owner can review the implementation and its evidence in one place. |
+| Agreed, 19 Nov 2026 ([#3](https://github.com/jpboliv/meridian-project/issues/3)): reuse the Meridian simulator as a starting point. We can add tools and cases, and change the simulator when an experiment warrants it. | The simulated exchange makes trials repeatable. Its existing tool catalog and fault models do not limit the questions we can test. |
 | Study memory, context, and caching together. | The owner wants to explain how earlier information affects current decisions. |
 | Track work in personal GitHub Issues. | Keep discussions and delivery evidence with the project. |
-| Agreed, 18 Nov 2026 ([#5](https://github.com/jpboliv/meridian-agents/issues/5)): keep a corrected claim and its correction in the same handover note, or omit the old claim. | A shift could act on stale advice before opening a separate correction. The original record remains available. |
+| Agreed, 18 Nov 2026 ([#5](https://github.com/jpboliv/meridian-project/issues/5)): keep a corrected claim and its correction in the same handover note, or omit the old claim. | A shift could act on stale advice before opening a separate correction. The original record remains available. |
 
 For each future decision, record the issue, alternatives considered, reason, owner review, and condition for revisiting it.
 
-Agreed, 18 Nov 2026 ([#6](https://github.com/jpboliv/meridian-agents/issues/6)): check a lesson’s [observable prerequisites](specs/memory.md#agreed-when-a-lesson-applies) after an upgrade rather than rejecting it by version alone. A different version can still supply the same readings. Revisit the check if the system cannot tell which readings a source supplies.
+Agreed, 18 Nov 2026 ([#6](https://github.com/jpboliv/meridian-project/issues/6)): check a lesson’s [observable prerequisites](specs/memory.md#agreed-when-a-lesson-applies) after an upgrade rather than rejecting it by version alone. A different version can still supply the same readings. Revisit the check if the system cannot tell which readings a source supplies.
 
-Agreed, 19 Nov 2026 ([#6](https://github.com/jpboliv/meridian-agents/issues/6)): [agents can correct a directly contradicted factual claim](specs/memory.md#agreed-who-can-correct-a-shared-lesson). This keeps later shifts from inheriting a known error without giving agents authority to change procedures. Use existing incident triage if uncertainty blocks a live decision.
+Agreed, 19 Nov 2026 ([#6](https://github.com/jpboliv/meridian-project/issues/6)): [agents can correct a directly contradicted factual claim](specs/memory.md#agreed-who-can-correct-a-shared-lesson). This keeps later shifts from inheriting a known error without giving agents authority to change procedures. Use existing incident triage if uncertainty blocks a live decision.
 
-Agreed, 19 Nov 2026 ([#6](https://github.com/jpboliv/meridian-agents/issues/6)): [remove deleted evidence from derived records](specs/memory.md#agreed-when-a-source-is-deleted). A copied claim can outlive its evidence if the system removes only the link.
+Agreed, 19 Nov 2026 ([#6](https://github.com/jpboliv/meridian-project/issues/6)): [remove deleted evidence from derived records](specs/memory.md#agreed-when-a-source-is-deleted). A copied claim can outlive its evidence if the system removes only the link.
 
 ## Delegated choices for owner review
 
@@ -23,7 +24,7 @@ State: Draft, 19 November 2026. The owner delegated the remaining choices and re
 
 | Issue and decision | Reason or condition for review |
 |---|---|
-| [1: Scope and milestones](project.md) | Compare the same incident system at M1, M2, and M3. Defer model routing and report animation until the main comparisons are complete. |
+| [22: Scope and milestones](project.md) | Compare the same incident system at M1, M2, and M3. Defer model routing and report animation until the main comparisons are complete. |
 | [2: Three shifts](reference-incident.md) | Change the affected instance, then the cause. This separates useful recall from repeating a fix. |
 | [3: Record ownership](architecture.md) | A receipt establishes an effect. A reading establishes the service condition. A checkpoint cannot replace either. |
 | [4: Prompt sections](specs/prompts.md) | Stable sections make costs measurable. Rebuild immediately if access or a correction changes the evidence. |

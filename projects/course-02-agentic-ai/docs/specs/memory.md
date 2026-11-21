@@ -32,7 +32,7 @@ If the team deletes the action log, the latency record still shows the start of 
 
 ## Draft: who can save and retrieve a lesson
 
-Draft for owner review · [Issue 6](https://github.com/jpboliv/meridian-agents/issues/6). A lesson is team-only by default. Apply the same rule to search, direct reads by ID, automatic handover, and cached notes. Filter by the actual requester and source access before ranking results. Do not expose the existence of another team's private lesson.
+Draft for owner review · [Issue 6](https://github.com/jpboliv/meridian-project/issues/6). A lesson is team-only by default. Apply the same rule to search, direct reads by ID, automatic handover, and cached notes. Filter by the actual requester and source access before ranking results. Do not expose the existence of another team's private lesson.
 
 For example, a database operator cannot receive a gateway lesson that cites a private gateway log. To share it, the owning operator approves a separate edition for the named team. That edition needs evidence the recipient can read and no private excerpts. If its evidence disappears, apply the same deletion rule.
 

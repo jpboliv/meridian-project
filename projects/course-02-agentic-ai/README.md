@@ -23,7 +23,7 @@ uv run --locked python projects/course-02-agentic-ai/first_line/demo.py
 
 This starts a fresh simulator for each case. The offline driver follows a fixed read order and chooses a target from the readings. MCP services, approvals, actions, recovery readings, and the course evaluator run locally. Each output line is a JSON trace. The command exits with a failure if any case fails. The [experiment log](docs/experiments.md#m1-grader-controls) shows what the graders accept and reject.
 
-The current `--live` switch runs **all five cases** using `OPENAI_API_KEY` from the local `.env`. Use the offline command above during development. Review the single-case pilot and its limits in [#8](https://github.com/jpboliv/meridian-agents/issues/8) before a paid run. The default model is `gpt-4.1-mini`; `OPENAI_MODEL` selects another. The model chooses reads and proposes an action. Code controls the approval, dispatch, and recovery report. Only the evaluator reads `first_line/checks/`. Cases A, C, and D form the three-shift story. B has missing readings; in [E the monitor answers with old readings](docs/experiments.md#case-e-the-healthy-but-stale-monitor). Each starts without memory. These runs do not measure provider cache reuse, cross-shift recall, or worker replacement.
+The current `--live` switch runs **all five cases** using `OPENAI_API_KEY` from the local `.env`. Use the offline command above during development. Review the single-case pilot and its limits in [#8](https://github.com/jpboliv/meridian-project/issues/8) before a paid run. The default model is `gpt-4.1-mini`; `OPENAI_MODEL` selects another. The model chooses reads and proposes an action. Code controls the approval, dispatch, and recovery report. Only the evaluator reads `first_line/checks/`. Cases A, C, and D form the three-shift story. B has missing readings; in [E the monitor answers with old readings](docs/experiments.md#case-e-the-healthy-but-stale-monitor). Each starts without memory. These runs do not measure provider cache reuse, cross-shift recall, or worker replacement.
 
 ## Design index
 
@@ -35,7 +35,7 @@ The introduction and the specifications below contain the editable text. To rebu
 uv run --locked python projects/course-02-agentic-ai/docs/render_report.py
 ```
 
-The [course references](references/) contain the project brief and the first session's slides. The [issue snapshot](docs/issue-snapshot.md) preserves the decisions and discussions from the [course fork's tracker](https://github.com/jpboliv/meridian-agents/issues).
+The [course references](references/) contain the project brief and the first session's slides. The [19 November snapshot](docs/issue-snapshot.md) preserves the discussions from that date. Use this repository’s [issue tracker](https://github.com/jpboliv/meridian-project/issues) for current work.
 
 - [Architecture and information ownership](docs/architecture.md)
 - [Prompts](docs/specs/prompts.md) and [context](docs/specs/context.md)
