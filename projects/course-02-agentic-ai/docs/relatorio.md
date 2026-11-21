@@ -64,11 +64,11 @@ Os cinco casos passaram com decisões programadas em `gateway-m1.6`, com os mesm
 
 **Falha controlada, caso B (programado).** O monitor falhou duas vezes na instância 1; a 2 nunca foi lida. Sem reinício, o agente pediu leituras das duas. [Registo B](../first_line/offline-traces-m1.6.jsonl#L2).
 
-**Pilotos reais, caso B (21 nov. 2026), distintos do B programado.** Uma execução por revisão, com `gpt-6-luna` e os mesmos limites: até 3 pedidos e 512 tokens de saída por pedido. O modelo escolhe cada passo e o código executa as leituras.
+**Pilotos reais, caso B (21 nov. 2026), distintos do B programado.** Uma execução por revisão, com `gpt-6-luna` e os mesmos limites: até 3 pedidos e 512 tokens de saída por pedido.
 
 - **Antes (`gateway-m1.5`, 3 pedidos).** O modelo escolheu os tickets três vezes, com o MRX-4100 já encontrado. Nunca escolheu o monitor nem a ligação. Falhou, sem efeitos. [Registo](../first_line/live-pilot-b-2026-11-21.jsonl#L1).
 - **Alteração.** A `gateway-m1.6` mostra ao modelo o estado do ticket e os passos já concluídos ([registo offline](experiments.md#2026-11-21-the-completed-ticket-read-offline-gateway-m16)).
-- **Depois (`gateway-m1.6`, 2 pedidos).** O modelo escolheu os tickets e depois as instâncias. O monitor da instância 1 não respondeu, e a única repetição também não. A seguir, o código verificou as ligações. A passagem ao operador pediu leituras das duas instâncias, sem efeitos, e passou nas 11 verificações. [Registo](../first_line/live-pilot-b-m1.6-2026-11-21.jsonl#L1).
+- **Depois (`gateway-m1.6`, 2 pedidos).** O modelo escolheu ler os tickets e depois as instâncias. Após o tempo limite do monitor, o código repetiu uma vez, verificou as duas ligações e produziu a passagem ao operador, a pedir leituras das duas instâncias. Passou nas 11 verificações, sem efeitos. [Registo](../first_line/live-pilot-b-m1.6-2026-11-21.jsonl#L1).
 
 Custo a preços padrão: 0,0001781 USD antes e 0,0001389 USD depois (estimativa, não fatura). Há uma só observação por revisão, por isso não prova que a alteração causou a diferença. Também não é linha de base nem resultado do #21.
 
