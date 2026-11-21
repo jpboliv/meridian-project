@@ -16,7 +16,7 @@ from meridian.mcp_servers import build_servers
 
 GATEWAY = "order-gateway"
 MAX_DECISIONS = 8
-REVISION = "gateway-m1.3"
+REVISION = "gateway-m1.4"
 
 
 class Decision(BaseModel):
@@ -69,7 +69,9 @@ class GatewayHealth(BaseModel):
 
 
 class ReadingMissing(Exception):
-    pass
+    def __init__(self, message, *, instance=None):
+        super().__init__(message)
+        self.instance = instance
 
 
 class Shift:
@@ -91,10 +93,10 @@ class Shift:
                     if isinstance(data, dict) and data.get("error"):
                         if data.get("retryable") is True and attempt == 0:
                             continue
-                        raise ReadingMissing(f"{server}.{tool} unavailable")
+                        raise ReadingMissing(f"{server}.{tool} unavailable", instance=args.get("instance"))
                     return schema.model_validate(data)
                 except (ToolError, ValidationError) as error:
-                    raise ReadingMissing(f"{server}.{tool} returned no usable evidence") from error
+                    raise ReadingMissing(f"{server}.{tool} returned no usable evidence", instance=args.get("instance")) from error
 
     async def investigate(self, step):
         if step == "tickets":
@@ -120,7 +122,7 @@ class Shift:
             series = await self.read("monitoring", "get_instance_datapoints",
                                      {"device": GATEWAY, "instance": instance, "minutes": 5}, InstanceSeries)
             if series.instance != instance:
-                raise ReadingMissing("Reading names another instance")
+                raise ReadingMissing("Reading names another instance", instance=instance)
             call = self.tools.trace[-1]
             sample = series.values[-1]
             samples[instance] = {**sample.model_dump(), "read_at": call.time,
@@ -207,11 +209,17 @@ class Shift:
             except ReadingMissing as error:
                 self.observations.pop(step, None)
                 self.observations["missing"] = str(error)
-                if step == "instances" and "links" not in self.observations:
+                if step == "instances":
                     try:
                         self.observations["links"] = await self.investigate("links")
                     except ReadingMissing as second:
+                        self.observations.pop("links", None)
                         self.observations["missing_link"] = str(second)
+                if error.instance:
+                    report = self.handover(f"{error}. Obtain current per-instance readings for {error.instance} before a restart.")
+                    report["follow_up"] = {"operation": "obtain_instance_readings", "source": "monitoring.get_instance_datapoints",
+                                           "target": error.instance}
+                    return report
                 return self.handover(f"{error}. Inspect the missing evidence; obtain current per-instance readings before a restart.")
         return self.handover("Decision limit reached. Review the available measurements.")
 

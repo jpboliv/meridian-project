@@ -10,7 +10,7 @@ from meridian.simulator import Simulator
 from meridian.tools import MeridianTools
 
 from demo import HERE, scripted
-from case_checks import stale_handover_checks
+from case_checks import evaluate_case
 from shift import Decision, Shift, live_decider
 from workbench import start_exchange
 
@@ -74,10 +74,10 @@ def test_stale_handover_needs_original_timestamp_and_independent_evidence():
     sim = start_exchange(HERE / "cases/shift-e.yaml")
     shift = Shift(IncidentDeps(MeridianTools(sim), identity=identity_for("first-line")))
     report = asyncio.run(shift.run(scripted))
-    expected = load_solution(HERE / "checks/shift-e.yaml")["stale_handover"]
+    solution = load_solution(HERE / "checks/shift-e.yaml")
 
     def passed(candidate, trace):
-        return all(c.passed for c in stale_handover_checks(sim, trace, candidate, expected))
+        return evaluate_case(sim, trace, candidate, solution).passed
 
     trace = shift.tools.trace
     assert report["status"] == "needs_operator" and not sim.executor.effects()
