@@ -1,6 +1,6 @@
 # Meridian roadmap · November 2026
 
-**Start here:** review the live baseline settings in [#8][8]. Five [scripted cases][traces] pass: two verified restarts on different instances, a missing reading, a changed cause, and a healthy but stale reading. No live-model baseline or provider-cache result exists yet.
+**Start here:** review the live baseline settings in [#8][8]. Five [scripted cases][traces] pass: two verified restarts on different instances, a missing reading, a changed cause, and a healthy but stale reading. A single live Case B pilot failed on 21 November ([record](projects/course-02-agentic-ai/docs/experiments.md#2026-11-21-live-pilot-case-b)). There is no repeated live baseline or [#21][21] comparison yet.
 
 ## Delivery order
 
