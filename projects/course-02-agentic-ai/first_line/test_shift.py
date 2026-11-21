@@ -1,6 +1,7 @@
 """Exercise decisions that the executor would otherwise accept for a noncritical service."""
 
 import asyncio
+import json
 from copy import deepcopy
 
 from pydantic_ai.models.test import TestModel
@@ -68,6 +69,35 @@ def test_receipt_is_not_a_recovery_reading():
     assert len(shift.deps.sim.executor.effects()) == 1
     assert report["status"] == "needs_operator" and report["action"]["receipt"]
     assert "recovery" not in report["observations"]
+
+
+def test_later_replica_timeout_keeps_the_acquired_reading_separate():
+    shift = start(tools={"monitoring.get_instance_datapoints": {"fail_calls": [2, 3]}})
+    report = asyncio.run(shift.run(scripted))
+    observations = report["observations"]
+    assert report["status"] == "needs_operator"
+    assert list(observations["instances"]) == ["order-gateway-1"]
+    assert observations["instances"]["order-gateway-1"]["freshness"] == "current"
+    assert observations["missing"] == "monitoring.get_instance_datapoints timed out on order-gateway-2"
+    assert report["follow_up"] == {"operation": "obtain_instance_readings", "source": "monitoring.get_instance_datapoints",
+                                   "failed": "order-gateway-2", "targets": ["order-gateway-2"]}
+    assert not shift.deps.sim.approvals and not shift.deps.sim.executor.effects()
+
+
+def test_unrecognised_backend_error_text_stays_out_of_the_report(monkeypatch):
+    shift = start()
+    secret = "refused by db://ops:hunter2@10.0.0.5"
+
+    def leak(*args, **kwargs):
+        raise KeyError(secret)
+
+    monkeypatch.setattr(shift.deps.sim.metrics, "series", leak)
+    report = asyncio.run(shift.run(scripted))
+    assert any(c.error == secret for c in shift.tools.trace)
+    assert report["observations"]["missing"] == "monitoring.get_instance_datapoints unavailable"
+    assert "hunter2" not in json.dumps(report)
+    assert report["follow_up"]["targets"] == ["order-gateway-1", "order-gateway-2"]
+    assert not shift.deps.sim.approvals and not shift.deps.sim.executor.effects()
 
 
 def test_stale_handover_needs_original_timestamp_and_independent_evidence():
