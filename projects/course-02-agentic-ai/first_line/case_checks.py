@@ -57,7 +57,8 @@ def timeout_checks(sim, trace, report, expected):
     first, retry = attempts
     component = expected["component"]
     instance = first.args.get("instance")
-    same_target = (instance in {i.instance_id for i in sim.state.component(component).instances}
+    deployed = {i.instance_id for i in sim.state.component(component).instances}
+    same_target = (instance in deployed
                    and retry.args.get("instance") == instance and first.step < retry.step
                    and sim.agent_start_tick <= first.tick <= retry.tick)
     timed_out = all(c.args.get("device") == component and isinstance(c.result, dict)
@@ -65,14 +66,18 @@ def timeout_checks(sim, trace, report, expected):
                     and c.result.get("retryable") is True for c in attempts)
     observations = report.get("observations", {})
     links = cited_links(sim, trace, observations, expected, "up")
+    # Both monitor calls failed, so every deployed replica still lacks a reading.
+    follow_up = report.get("follow_up")
+    targets = follow_up.get("targets") if isinstance(follow_up, dict) else None
     return [
         Check(name, same_target and timed_out, f"{instance} at ticks {first.tick}, {retry.tick}"),
         Check("independent link observed after the retry",
               any(c.step > retry.step and c.tick >= retry.tick for c in links), expected["dependency"]),
-        Check("handover names the unresolved instance measurement",
-              bool(observations.get("missing")) and has_fields(report.get("follow_up"),
-                   operation="obtain_instance_readings", source=INSTANCE_MONITOR, target=instance),
-              str(instance)),
+        Check("handover names the timed-out read and every unread replica",
+              str(retry.error) in str(observations.get("missing", ""))
+              and has_fields(follow_up, operation="obtain_instance_readings", source=INSTANCE_MONITOR, failed=instance)
+              and isinstance(targets, list) and set(targets) == deployed,
+              f"{instance} failed; unread {sorted(deployed)}"),
     ]
 
 

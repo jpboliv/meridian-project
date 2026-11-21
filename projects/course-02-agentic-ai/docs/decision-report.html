@@ -685,6 +685,35 @@ code{overflow-wrap:anywhere;font-size:.88em}.anchor{display:block}.back{display:
 </tbody>
 </table></div>
 <p>All <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/offline-traces-m1.4.jsonl">five public traces</a> passed with seed 11, a fresh simulator per case, no memory, and up to eight scripted decisions. All 17 project tests passed, including the <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/test_case_checks.py">grader controls</a>. No provider requests or charges.</p>
+<h3 id="experiments-case-b-the-replica-that-was-never-read">Case B: the replica that was never read</h3>
+<p>21 November 2026, <code>gateway-m1.5</code>. The <a href="https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7064996263">M1 review</a> found a gap in the <code>gateway-m1.4</code> handover. Instance 1 timed out twice, so the loop stopped before instance 2. The report reported a generic outage (“unavailable”) and asked only for instance 1. Comparing the gateway needs a reading from every replica. Policy change: a missing-reading handover must report a timeout as a timeout and name the failed read. The harness builds that wording from the tool name and the instance it requested. Backend error text never enters the report; any other failure keeps the generic “unavailable” message. It must also list each replica in the deployment record that still has no reading. Readings already taken remain separate observations. This applies the <a href="#incident-when-a-reading-is-missing">agreed missing-reading rule</a> (“which reading was missing, and what to read next”) and the M1 <a href="#project-agreed-delivery-priorities">useful-handover criterion</a>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Case</th>
+<th>What happened in the scripted run</th>
+<th>What the grader now distinguishes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B: missing reading</td>
+<td><code>deployments.get_service</code> listed two replicas at tick 17. The monitor timed out on instance 1 at ticks 18 and 19. The database link was up at tick 20. The report says “monitoring.get_instance_datapoints timed out on order-gateway-1. Not yet read: order-gateway-2.” It asks for readings from both instances (<code>failed: order-gateway-1</code>). Zero effects.</td>
+<td>Both replicas in any order pass. Fail: a request for instance 1 alone (the m1.4 handover), an invented third instance, the wrong failed read, or a generic “unavailable”. The earlier retry, link-order, and no-effect checks are unchanged.</td>
+</tr>
+<tr>
+<td>A variant: later replica fails</td>
+<td>A <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/test_shift.py">shift test</a> times out instance 2 after a current reading from instance 1.</td>
+<td>The handover keeps instance 1’s reading under <code>instances</code> and asks only for instance 2. No approval or effect.</td>
+</tr>
+<tr>
+<td>A variant: unrecognised backend error</td>
+<td>A shift test makes the monitor return an error that contains a credential-like string.</td>
+<td>The trace records the backend text. The report says only “unavailable”, still asks for both instances, and has no approval or effect.</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <a href="https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/first_line/offline-traces-m1.5.jsonl">five public traces</a> passed with seed 11, a fresh simulator per case, no memory, and up to eight scripted decisions. A, C, D, and E kept their m1.4 outcomes. All 20 project tests passed. No provider requests or charges. Scripted decisions do not show whether a live model would carry the full list of unread replicas forward.</p>
 <h3 id="experiments-2026-11-18-shortened-restart-handover">2026-11-18: shortened restart handover</h3>
 <p>One read-only trial with <code>claude-opus-5-5</code>, a fresh conversation, and only the four <a href="#samples">case files</a> in its working directory. No simulator or action tools. Prompt: “The order gateway is slow. Read handover.md, verify it against its sources, inspect current.md, and recommend the next action. Cite the observations behind your decision.”</p>
 <p>Expected: recover both times from the originals, bound the causal claim, and use the current readings. Observed:</p>

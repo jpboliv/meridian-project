@@ -16,7 +16,7 @@ from meridian.mcp_servers import build_servers
 
 GATEWAY = "order-gateway"
 MAX_DECISIONS = 8
-REVISION = "gateway-m1.4"
+REVISION = "gateway-m1.5"
 
 
 class Decision(BaseModel):
@@ -72,6 +72,8 @@ class ReadingMissing(Exception):
     def __init__(self, message, *, instance=None):
         super().__init__(message)
         self.instance = instance
+        self.unread = []  # replicas from the deployment record with no reading yet, failed one first
+        self.samples = {}  # readings acquired before the failure
 
 
 class Shift:
@@ -93,6 +95,10 @@ class Shift:
                     if isinstance(data, dict) and data.get("error"):
                         if data.get("retryable") is True and attempt == 0:
                             continue
+                        # Never copy backend text into the report: name only a recognised retryable timeout.
+                        if data.get("retryable") is True and data["error"] == f"{server}.{tool} timed out":
+                            where = f" on {args['instance']}" if "instance" in args else ""
+                            raise ReadingMissing(f"{server}.{tool} timed out{where}", instance=args.get("instance"))
                         raise ReadingMissing(f"{server}.{tool} unavailable", instance=args.get("instance"))
                     return schema.model_validate(data)
                 except (ToolError, ValidationError) as error:
@@ -119,10 +125,15 @@ class Shift:
         samples = {}
         for index in range(1, service.replicas + 1):
             instance = f"{GATEWAY}-{index}"
-            series = await self.read("monitoring", "get_instance_datapoints",
-                                     {"device": GATEWAY, "instance": instance, "minutes": 5}, InstanceSeries)
-            if series.instance != instance:
-                raise ReadingMissing("Reading names another instance", instance=instance)
+            try:
+                series = await self.read("monitoring", "get_instance_datapoints",
+                                         {"device": GATEWAY, "instance": instance, "minutes": 5}, InstanceSeries)
+                if series.instance != instance:
+                    raise ReadingMissing("Reading names another instance", instance=instance)
+            except ReadingMissing as error:
+                error.unread = [f"{GATEWAY}-{i}" for i in range(index, service.replicas + 1)]
+                error.samples = samples
+                raise
             call = self.tools.trace[-1]
             sample = series.values[-1]
             samples[instance] = {**sample.model_dump(), "read_at": call.time,
@@ -208,6 +219,8 @@ class Shift:
                 self.last_read_tick[step] = self.tools.trace[-1].tick
             except ReadingMissing as error:
                 self.observations.pop(step, None)
+                if error.samples:
+                    self.observations[step] = error.samples
                 self.observations["missing"] = str(error)
                 if step == "instances":
                     try:
@@ -215,10 +228,13 @@ class Shift:
                     except ReadingMissing as second:
                         self.observations.pop("links", None)
                         self.observations["missing_link"] = str(second)
-                if error.instance:
-                    report = self.handover(f"{error}. Obtain current per-instance readings for {error.instance} before a restart.")
+                if error.unread:
+                    later = error.unread[1:]  # the failed replica comes first
+                    not_read = f" Not yet read: {', '.join(later)}." if later else ""
+                    report = self.handover(f"{error}.{not_read} Obtain current per-instance readings for "
+                                           f"{', '.join(error.unread)} before comparing instances or restarting.")
                     report["follow_up"] = {"operation": "obtain_instance_readings", "source": "monitoring.get_instance_datapoints",
-                                           "target": error.instance}
+                                           "failed": error.instance, "targets": error.unread}
                     return report
                 return self.handover(f"{error}. Inspect the missing evidence; obtain current per-instance readings before a restart.")
         return self.handover("Decision limit reached. Review the available measurements.")

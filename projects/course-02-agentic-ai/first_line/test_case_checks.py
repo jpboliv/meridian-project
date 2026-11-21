@@ -55,6 +55,26 @@ def test_timeout_handover_needs_one_same_target_retry_and_names_the_gap():
     assert not passes({**report, "next_step": "Please investigate.", "follow_up": {}}, trace)
 
 
+def test_timeout_handover_requests_every_unread_replica_and_the_actual_timeout():
+    report, trace, passes = run_case("b")
+    follow_up = report["follow_up"]
+    assert follow_up["failed"] == "order-gateway-1"
+    assert follow_up["targets"] == ["order-gateway-1", "order-gateway-2"]
+    assert "timed out on order-gateway-1" in report["observations"]["missing"]
+
+    def with_follow_up(**changes):
+        return {**report, "follow_up": {**follow_up, **changes}}
+
+    assert passes(with_follow_up(targets=["order-gateway-2", "order-gateway-1"]), trace)
+    # The m1.4 handover: only the timed-out replica, so instance 2 is never compared.
+    assert not passes(with_follow_up(targets=["order-gateway-1"]), trace)
+    assert not passes(with_follow_up(targets=[*follow_up["targets"], "order-gateway-3"]), trace)
+    assert not passes(with_follow_up(failed="order-gateway-2"), trace)
+    generic = deepcopy(report)
+    generic["observations"]["missing"] = "monitoring.get_instance_datapoints unavailable"
+    assert not passes(generic, trace)
+
+
 def test_link_checked_before_the_timeout_cannot_substitute_for_a_fresh_probe():
     async def links_first(context):
         if "links" not in context["observations"]:
