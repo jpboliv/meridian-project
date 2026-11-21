@@ -33,38 +33,44 @@ async def scripted(context):
     return Decision(step="handover")
 
 
+async def run_case(path, model=None):
+    """Run one case in a fresh simulator, then evaluate it. Returns one trace record."""
+    calls = []
+    decide = live_decider(model, calls) if model else scripted
+    sim = start_exchange(path)
+    identity = identity_for(sim.scenario.actor["role"])
+    tools = MeridianTools(sim, actor=identity["name"])
+    shift = Shift(IncidentDeps(tools, identity=identity))
+    report = await shift.run(decide)
+    # Evaluation can advance the world; capture the last agent tick first.
+    end_tick = sim.state.tick
+    solution = load_solution(HERE / "checks" / path.name)
+    checks = evaluate_case(sim, tools.trace, report, solution)
+    return {
+        "case": path.stem, "revision": REVISION,
+        "harness_sha256": hashlib.sha256((HERE / "shift.py").read_bytes()).hexdigest(),
+        "model": model or "offline scripted decisions (no LLM)",
+        "completed_model_calls": calls,
+        "seed": sim.scenario.seed, "decision_limit": MAX_DECISIONS, "end_tick": end_tick,
+        "decisions": shift.decisions, "reads_and_actions": [
+            {"tick": c.tick, "tool": c.tool,
+             **{k: c.args[k] for k in ("component", "device", "instance", "source", "target") if k in c.args},
+             **({"error": c.error} if c.error else {})} for c in tools.trace],
+        "report": report, "applied_effects": len(sim.executor.effects()),
+        "checks": [{"check": c.name, "pass": c.passed, "detail": c.detail} for c in checks.checks],
+        "passed": checks.passed,
+    }
+
+
 async def main(live):
     if live:
         require_api_key()
     model = default_model() if live else None
     passed = True
     for path in sorted((HERE / "cases").glob("*.yaml")):
-        calls = []
-        decide = live_decider(model, calls) if live else scripted
-        sim = start_exchange(path)
-        identity = identity_for(sim.scenario.actor["role"])
-        tools = MeridianTools(sim, actor=identity["name"])
-        shift = Shift(IncidentDeps(tools, identity=identity))
-        report = await shift.run(decide)
-        # Evaluation can advance the world; capture the last agent tick first.
-        end_tick = sim.state.tick
-        solution = load_solution(HERE / "checks" / path.name)
-        checks = evaluate_case(sim, tools.trace, report, solution)
-        passed &= checks.passed
-        print(json.dumps({
-            "case": path.stem, "revision": REVISION,
-            "harness_sha256": hashlib.sha256((HERE / "shift.py").read_bytes()).hexdigest(),
-            "model": model or "offline scripted decisions (no LLM)",
-            "completed_model_calls": calls,
-            "seed": sim.scenario.seed, "decision_limit": MAX_DECISIONS, "end_tick": end_tick,
-            "decisions": shift.decisions, "reads_and_actions": [
-                {"tick": c.tick, "tool": c.tool,
-                 **{k: c.args[k] for k in ("component", "device", "instance", "source", "target") if k in c.args},
-                 **({"error": c.error} if c.error else {})} for c in tools.trace],
-            "report": report, "applied_effects": len(sim.executor.effects()),
-            "checks": [{"check": c.name, "pass": c.passed, "detail": c.detail} for c in checks.checks],
-            "passed": checks.passed,
-        }, ensure_ascii=False))
+        record = await run_case(path, model)
+        passed &= record["passed"]
+        print(json.dumps(record, ensure_ascii=False))
     return 0 if passed else 1
 
 
