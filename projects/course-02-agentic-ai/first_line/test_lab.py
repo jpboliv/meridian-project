@@ -26,7 +26,28 @@ def test_lab_runs_only_the_selected_case_on_request(monkeypatch):
     assert record["passed"] and record["applied_effects"] == 0
     assert record["report"]["status"] == "needs_operator"
     assert at.success[0].value.startswith("**Caso B: passou**")
+    shown = [m.value for m in at.markdown]
+    assert ("Próximo passo: **O monitor de instâncias falhou em order-gateway-1. Obter leituras atuais de "
+            "order-gateway-1 e order-gateway-2 antes de comparar instâncias ou reiniciar.**") in shown
+    assert not any(m.startswith("Reiniciou") for m in shown)
 
     at.selectbox(key="caso").select("A").run()
     assert len(ran) == 1
     assert at.info[0].value.startswith("Resultado do caso B.")
+
+
+def test_lab_shows_the_case_a_restart_and_recovery():
+    at = AppTest.from_file(str(demo.HERE / "lab.py"), default_timeout=60).run()
+    assert "resultado" not in at.session_state
+    at.selectbox(key="caso").select("A").run()
+    at.button(key="executar").click().run()
+    assert not at.exception
+    assert at.success[0].value.startswith("**Caso A: passou**")
+    assert [(m.label, m.value) for m in at.metric] == [
+        ("Decisão final", "recuperado"), ("Efeitos aplicados", "1"), ("Último tick do agente", "27")]
+    shown = [m.value for m in at.markdown]
+    assert "Reiniciou **order-gateway-2** no tick 23 (aprovação APR-001, recibo ACT-001)." in shown
+    assert "**Leituras depois do reinício** (metrics/order-gateway/26)" in shown
+    recovery = at.table[2].value  # instances, links, then the recovery readings
+    assert recovery["tick"].tolist() == [24, 25, 26]
+    assert recovery["latência (ms)"].tolist() == [6.5, 5.0, 5.0]

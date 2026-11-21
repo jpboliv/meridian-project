@@ -11,7 +11,7 @@ It grows in three milestones:
 
 Start with the [project goals](docs/project.md) and [reference incident](docs/reference-incident.md). Follow the [roadmap](../../ROADMAP.md) for milestone outcomes.
 
-For the class presentation, use [the short report in Portuguese](docs/relatorio.md): architecture diagrams, one supported and one controlled-failure outcome with traces, and what remains unmeasured.
+For the class presentation, use [the short report in Portuguese](docs/relatorio.md): the caching question, the architecture, one verified restart and one controlled failure with their `gateway-m1.5` traces, and what remains unmeasured.
 
 ## Run the first-line cases
 
@@ -33,7 +33,7 @@ From the repository root, with no API key:
 uv run --locked streamlit run projects/course-02-agentic-ai/first_line/lab.py
 ```
 
-Choose one public case, A–E, and press **Executar caso**. The page runs that case through the same `run_case` path as the command above and shows the decision, key observations, applied effects, the evaluator's checks, and the JSON trace record. Opening the page or changing the selection runs nothing. The lab never calls a model.
+Choose one public case, A–E, and press **Executar caso**. The page runs that case through the same `run_case` path as the command above and shows the decision, a Portuguese summary of the next step, key observations, applied effects, the evaluator's checks, and the JSON trace record. Tool identifiers and the original report text stay in English as evidence. Opening the page or changing the selection runs nothing. The lab never calls a model. The page names the [report](docs/relatorio.md) it accompanies.
 
 ## Design index
 

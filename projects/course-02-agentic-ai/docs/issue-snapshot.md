@@ -1,6 +1,6 @@
 # Meridian issue snapshot
 
-This snapshot preserves the discussions and issue numbers from 19 November 2026. Links lead to the [current tracker](https://github.com/jpboliv/meridian-project/issues). Original issue 1 is now [#22](https://github.com/jpboliv/meridian-project/issues/22); issues 2 through 21 kept their numbers. The [specification report](decision-report.html) gives the current design at this revision.
+This snapshot preserves the discussions and issue numbers from 19 November 2026. Links lead to the [current tracker](https://github.com/jpboliv/meridian-project/issues). Original issue 1 is now [#22](https://github.com/jpboliv/meridian-project/issues/22); issues 2 through 21 kept their numbers. On that date the generated specification report held the consolidated design; [decision-report.html](decision-report.html) is now only a pointer to the [presentation report](relatorio.md) and to the commit that preserves the original. The specifications beside this file are the current sources.
 
 ## [1: Define learning objectives and success criteria](https://github.com/jpboliv/meridian-project/issues/22)
 
