@@ -58,6 +58,23 @@ All [five public traces](../first_line/offline-traces-m1.4.jsonl) passed with se
 
 All [five public traces](../first_line/offline-traces-m1.5.jsonl) passed with seed 11, a fresh simulator per case, no memory, and up to eight scripted decisions. A, C, D, and E kept their m1.4 outcomes. All 20 project tests passed. No provider requests or charges. Scripted decisions do not show whether a live model would carry the full list of unread replicas forward.
 
+## Single-case pilot, prepared offline
+
+21 November 2026, `gateway-m1.5` harness ([#8](https://github.com/jpboliv/meridian-project/issues/8), [#13](https://github.com/jpboliv/meridian-project/issues/13)). Before the paid pilot, can a live run be confined to one case with known limits? Previously, `--live` ran all five cases with no limits. The [run instructions](../README.md#one-bounded-live-case) now require one case, a request cap, and a per-request output limit. Limits have no defaults, because a default would set spending without the owner. The model comes from the existing `OPENAI_MODEL` setting, with no fallback to the course default. `shift.py` is unchanged: the policy, `REVISION`, and `harness_sha256` stay the same. The live runtime is fingerprinted separately (`pilot_sha256`). A cap stop is a harness stop, so `demo.py` writes the handover through the shift's own report.
+
+| Offline test (mock Responses API) | Observed |
+|---|---|
+| Invalid live commands: missing case or limit; zero, negative, or non-numeric limits; unknown case; the removed `--model` flag; limit without `--live` | Exit 2 before the key loader, client, or any case ran. |
+| `OPENAI_MODEL` unset, empty, or blank | Stopped after the key check and before the provider was built. No case ran. |
+| Case C, cap 2, `OPENAI_MODEL` set | Only C ran, on that model. Two requests were sent and the third was refused locally. The run handed over with zero effects, and the client was closed. |
+| Case A, cap 3: an invalid decision, its repair, then a second decision | Three requests were sent, and the fourth never reached the transport. The rejected answer's usage was recorded. Each request carried `max_output_tokens`. The handover began “Provider request cap reached (3 requests sent)”, with no action or recovery claim. |
+| 503, 429, or connection error | One request each (SDK retries off). The handover reported an unavailable model, not the cap. Usage was `null`, not zero. Upstream error text stayed out of the trace. Zero effects. |
+| A successful response with no usage | `completed_model_calls` kept the model and request count, and its token fields were `null`, not 0. |
+| A harness error during a live run | The client was closed and the error was re-raised. |
+| A client with SDK retries switched on | Its retries still counted: two 500s were sent, and the third attempt was refused. |
+
+Offline, A–E reproduce the [`gateway-m1.5` traces](../first_line/offline-traces-m1.5.jsonl) byte for byte, all five together or `--case B` alone. The lab stays scripted. The tests check the [agreed evidence rule](specs/evaluation.md#agreed-metrics) for a stopped run: an honest incomplete handover and no unsupported recovery claim. No provider requests, tokens, or costs. This does not show how a model behaves within these limits. The model, limits, spending, and a single paid trial are separate owner decisions in #8. The repetition protocol is unchanged.
+
 ## 2026-11-18: shortened restart handover
 
 One read-only trial with `claude-opus-5-5`, a fresh conversation, and only the four [case files](cases/restart/) in its working directory. No simulator or action tools. Prompt: “The order gateway is slow. Read handover.md, verify it against its sources, inspect current.md, and recommend the next action. Cite the observations behind your decision.”
