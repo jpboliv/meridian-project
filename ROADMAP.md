@@ -1,6 +1,6 @@
 # Meridian roadmap · November 2026
 
-**Start here:** review the live baseline settings in [#8][8]. Five [scripted cases][traces] pass: two verified restarts on different instances, a missing reading, a changed cause, and a healthy but stale reading. A single live Case B pilot failed on 21 November ([record](projects/course-02-agentic-ai/docs/experiments.md#2026-11-21-live-pilot-case-b)). There is no repeated live baseline or [#21][21] comparison yet.
+**Start here:** review the offline baseline protocol and held-out cases in [#8][8]. Five [scripted cases][traces] pass: two verified restarts on different instances, a missing reading, a changed cause, and a healthy but stale reading. On 21 November, one live Case B pilot ran on each revision: `gateway-m1.5` [failed](projects/course-02-agentic-ai/docs/experiments.md#2026-11-21-live-pilot-case-b) and `gateway-m1.6` [passed](projects/course-02-agentic-ai/docs/experiments.md#2026-11-21-live-pilot-case-b-gateway-m16). There is no repeated live baseline or [#21][21] comparison yet. Further runs and spending are separate owner decisions.
 
 ## Delivery order
 
