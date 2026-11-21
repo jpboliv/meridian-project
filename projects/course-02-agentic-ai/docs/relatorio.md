@@ -1,6 +1,6 @@
 # Meridian: o agente de primeira linha
 
-Projeto Agentic AI · M1 testado offline (`gateway-m1.5`) · sem resultados com modelo real
+Projeto Agentic AI · M1 testado offline (`gateway-m1.5`) · um piloto real (caso B, falhou), sem linha de base
 
 ## Pergunta
 
@@ -58,11 +58,13 @@ flowchart TD
 
 ## Evidência
 
-Os cinco casos passaram com decisões programadas ([registos](../first_line/offline-traces-m1.5.jsonl)). Ainda não há medições do fornecedor.
+Os cinco casos passaram com decisões programadas ([registos](../first_line/offline-traces-m1.5.jsonl)). Com modelo real houve apenas um piloto, no caso B (ver abaixo).
 
 **Reinício, caso A.** A instância 2 estava a 93,9 % de memória e as ligações ativas. Após o reinício aprovado (tick 23): 6,5, 5,0 e 5,0 ms. [Registo A](../first_line/offline-traces-m1.5.jsonl#L1).
 
-**Falha controlada, caso B.** O monitor falhou duas vezes na instância 1; a 2 nunca foi lida. Sem reinício, o agente pediu leituras das duas. [Registo B](../first_line/offline-traces-m1.5.jsonl#L2).
+**Falha controlada, caso B (programado).** O monitor falhou duas vezes na instância 1; a 2 nunca foi lida. Sem reinício, o agente pediu leituras das duas. [Registo B](../first_line/offline-traces-m1.5.jsonl#L2).
+
+**Piloto real, caso B (21 nov. 2026), distinto do B programado.** Numa única execução com `gpt-6-luna`, o modelo pesquisou os tickets três vezes, mesmo com o MRX-4100 já encontrado. Nunca leu o monitor nem a ligação, e o avaliador deu falha nessas verificações. Passou ao operador sem efeitos. Não é linha de base nem resultado do #21; a causa está por apurar. [Registo do piloto](../first_line/live-pilot-b-2026-11-21.jsonl#L1).
 
 **Prefixo, offline.** Em 13 pares de decisões seguidas, o JSON do utilizador partilha 22 bytes iniciais (mediana) com a hora no início e 920 com ela no fim. São bytes, não tokens: não mostram leituras da cache nem se o prefixo chega aos 1024 tokens exigidos ([notas](experiments.md#context-reuse-arms-prepared-offline)).
 
@@ -78,4 +80,4 @@ Escolha um caso de A a E e carregue em **Executar caso**.
 
 ## Utilização de IA
 
-Escrito com assistentes de IA, incluindo o Claude Code; os resultados acima não usam nenhum modelo.
+Escrito com assistentes de IA, incluindo o Claude Code; os resultados programados acima não usam nenhum modelo; só o piloto real do caso B usou o `gpt-6-luna`.
