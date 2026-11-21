@@ -2,6 +2,8 @@
 
 Specification review · 19 November 2026
 
+For the current presentation, read the [short report in Portuguese](relatorio.md) (21 November). This page keeps the 19 November review.
+
 ## The short version for Luís
 
 ### Para apresentar à turma (cerca de um minuto)

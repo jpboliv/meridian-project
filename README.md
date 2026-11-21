@@ -2,7 +2,7 @@
 
 How can an on-call agent use yesterday's incident to investigate faster without mistaking it for today's evidence?
 
-Start with the [short explanation for Luís](projects/course-02-agentic-ai/docs/design-review.md#the-short-version-for-luís). After cloning the repository, open `projects/course-02-agentic-ai/docs/decision-report.html` in a browser for the full report. The [project guide](projects/course-02-agentic-ai/README.md) links to its editable sources.
+Start with the [presentation report for Luís](projects/course-02-agentic-ai/docs/relatorio.md), in Portuguese. The [project guide](projects/course-02-agentic-ai/README.md) explains how to run the offline lab and links to the detailed specifications.
 
 The private [meridian-project repository](https://github.com/jpboliv/meridian-project) holds the code, [issues](https://github.com/jpboliv/meridian-project/issues), and [milestone reviews](https://github.com/jpboliv/meridian-project/milestones). See the [roadmap](ROADMAP.md) and [current focus](STATUS.md) for the milestone plan.
 
