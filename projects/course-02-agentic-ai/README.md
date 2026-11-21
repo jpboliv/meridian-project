@@ -35,7 +35,7 @@ The introduction and the specifications below contain the editable text. To rebu
 uv run --locked python projects/course-02-agentic-ai/docs/render_report.py
 ```
 
-The [course references](references/) contain the project brief and the first session's slides. The [issue snapshot](docs/issue-snapshot.md) preserves the decisions and discussions from the [course fork's tracker](https://github.com/jpboliv/meridian-agents/issues).
+The [course references](references/) contain the project brief and the first session's slides. The [19 November snapshot](docs/issue-snapshot.md) preserves the discussions from that date. Use this repository’s [issue tracker](https://github.com/jpboliv/meridian-project/issues) for current work.
 
 - [Architecture and information ownership](docs/architecture.md)
 - [Prompts](docs/specs/prompts.md) and [context](docs/specs/context.md)

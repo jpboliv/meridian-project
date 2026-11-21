@@ -4,7 +4,7 @@
 
 Each specialist reports what they found and where they found it. If they disagree, the agent leading the investigation asks for more evidence before anyone changes the system.
 
-Draft for owner review · [Issue 10](https://github.com/jpboliv/meridian-agents/issues/10).
+Draft for owner review · [Issue 10](https://github.com/jpboliv/meridian-project/issues/10).
 
 The lead agent owns the incident, combines findings, and reports to the operator. The infrastructure specialist reads instance and link measurements. The application specialist reads change records, tickets, and service logs. Specialists can read within the caller's scope. Neither can approve actions, dispatch changes, or write shared lessons.
 

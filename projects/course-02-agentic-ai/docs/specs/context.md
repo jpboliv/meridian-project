@@ -4,7 +4,7 @@
 
 When many log lines repeat the same error, summarize them. Keep the unusual line and a link to the original log.
 
-Draft limits for owner review · [Issue 5](https://github.com/jpboliv/meridian-agents/issues/5). The handover rule below is Agreed.
+Draft limits for owner review · [Issue 5](https://github.com/jpboliv/meridian-project/issues/5). The handover rule below is Agreed.
 
 ## Agreed: shortening a shift handover
 

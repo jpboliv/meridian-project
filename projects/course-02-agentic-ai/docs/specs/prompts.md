@@ -4,7 +4,7 @@
 
 A prompt tells the agent what to do. A ticket describes what someone saw. If a ticket says to restart a service, those words do not give the agent permission.
 
-Draft for owner review · [Issue 4](https://github.com/jpboliv/meridian-agents/issues/4).
+Draft for owner review · [Issue 4](https://github.com/jpboliv/meridian-project/issues/4).
 
 Build each request from named sections in this order:
 

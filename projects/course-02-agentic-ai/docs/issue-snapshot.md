@@ -1,8 +1,8 @@
 # Meridian issue snapshot
 
-This copy preserves the project tracker as of 19 November 2026. The [original tracker](https://github.com/jpboliv/meridian-agents/issues) retains the live issues. The [specification report](decision-report.html) gives the current design at this revision.
+This snapshot preserves the discussions and issue numbers from 19 November 2026. Links lead to the [current tracker](https://github.com/jpboliv/meridian-project/issues). Original issue 1 is now [#22](https://github.com/jpboliv/meridian-project/issues/22); issues 2 through 21 kept their numbers. The [specification report](decision-report.html) gives the current design at this revision.
 
-## [1: Define learning objectives and success criteria](https://github.com/jpboliv/meridian-agents/issues/1)
+## [1: Define learning objectives and success criteria](https://github.com/jpboliv/meridian-project/issues/22)
 
 Open · 0 — Design foundation
 
@@ -12,7 +12,7 @@ What must the owner understand and demonstrate at the end of this project?
 
 #### Deliverable
 
-Update [project.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/project.md) and link the evidence or decision here.
+Update [project.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/project.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -29,8 +29,8 @@ None. This is the first design discussion.
 
 #### Course references
 
-- [projects/course-02-agentic-ai/README.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/README.md)
-- [sessions/course-02-agentic-ai/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/README.md)
+- [projects/course-02-agentic-ai/README.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/README.md)
+- [sessions/course-02-agentic-ai/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/README.md)
 
 #### Review
 
@@ -38,7 +38,7 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/1#issuecomment-7009173174)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/22#issuecomment-7064330185)
 
 19 November specification review · Draft for owner review.
 
@@ -46,7 +46,7 @@ The report maps the course requirements to M1, M2, and M3 and gives the short ex
 
 Course project: `docs/project.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [2: Specify the reference incident across multiple shifts](https://github.com/jpboliv/meridian-agents/issues/2)
+## [2: Specify the reference incident across multiple shifts](https://github.com/jpboliv/meridian-project/issues/2)
 
 Open · 0 — Design foundation
 
@@ -56,7 +56,7 @@ How can one incident sequence show useful recall, changed conditions, correction
 
 #### Deliverable
 
-Update [reference-incident.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/reference-incident.md) and link the evidence or decision here.
+Update [reference-incident.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/reference-incident.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -73,7 +73,7 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/04-memory/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/04-memory/README.md)
+- [sessions/course-02-agentic-ai/04-memory/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/04-memory/README.md)
 
 #### Review
 
@@ -81,19 +81,19 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/2#issuecomment-6960624766)
+[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-project/issues/2#issuecomment-7064309411)
 
 Agreed in 1de741b: keep an incident record of what happened and a separate lesson about what to check next. On shift three the original record stays true; normal gateway memory and a slow database link point elsewhere. The evidence-unavailable case is still open.
 
-[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/2#issuecomment-6961150234)
+[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-project/issues/2#issuecomment-7064309542)
 
 Agreed missing-reading rule in 47cde53: retry a timeout once, skip retry after denial, then consult one authorized independent source if time permits. If the cause remains unclear, hand over without a restart or a new causal lesson. Next: define shift inputs and evaluator-only facts.
 
-[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/2#issuecomment-6961585049)
+[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-project/issues/2#issuecomment-7064309611)
 
 Added the wrongly credited restart as a planned case in db1dd80. Score the saved correction separately from what the next shift reads and does. Replay it with both lookup and automatic handover.
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/2#issuecomment-7009173222)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/2#issuecomment-7064309699)
 
 19 November specification review · Draft for owner review.
 
@@ -101,7 +101,7 @@ Define the operator brief and the evaluator-only facts separately. Replay the sa
 
 Course project: `docs/reference-incident.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [3: Define architecture and information ownership](https://github.com/jpboliv/meridian-agents/issues/3)
+## [3: Define architecture and information ownership](https://github.com/jpboliv/meridian-project/issues/3)
 
 Open · 0 — Design foundation
 
@@ -111,7 +111,7 @@ Where do instructions, evidence, working state, memory, cache entries, and check
 
 #### Deliverable
 
-Update [architecture.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/architecture.md) and link the evidence or decision here.
+Update [architecture.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/architecture.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -129,9 +129,9 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [meridian/agent_runtime.py](https://github.com/jpboliv/meridian-agents/blob/main/meridian/agent_runtime.py)
-- [meridian/memory.py](https://github.com/jpboliv/meridian-agents/blob/main/meridian/memory.py)
-- [sessions/course-02-agentic-ai/08-agents-in-production/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/README.md)
+- [meridian/agent_runtime.py](https://github.com/jpboliv/meridian-project/blob/main/meridian/agent_runtime.py)
+- [meridian/memory.py](https://github.com/jpboliv/meridian-project/blob/main/meridian/memory.py)
+- [sessions/course-02-agentic-ai/08-agents-in-production/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/README.md)
 
 #### Review
 
@@ -139,7 +139,7 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/3#issuecomment-7009173096)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/3#issuecomment-7064319877)
 
 19 November specification review · Draft for owner review.
 
@@ -147,7 +147,7 @@ The source owns its observation, the executor owns the effect receipt, and the w
 
 Course project: `docs/architecture.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [4: Specify prompt structure and versioning](https://github.com/jpboliv/meridian-agents/issues/4)
+## [4: Specify prompt structure and versioning](https://github.com/jpboliv/meridian-project/issues/4)
 
 Open · 0 — Design foundation
 
@@ -157,7 +157,7 @@ How are stable instructions, task inputs, retrieved data, and output contracts a
 
 #### Deliverable
 
-Update [specs/prompts.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/prompts.md) and link the evidence or decision here.
+Update [specs/prompts.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/prompts.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -174,8 +174,8 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/01-agent-harness/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/01-agent-harness/README.md)
-- [sessions/course-02-agentic-ai/05-security/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/05-security/README.md)
+- [sessions/course-02-agentic-ai/01-agent-harness/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/01-agent-harness/README.md)
+- [sessions/course-02-agentic-ai/05-security/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/05-security/README.md)
 
 #### Review
 
@@ -183,7 +183,7 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/4#issuecomment-7009173690)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/4#issuecomment-7064320456)
 
 19 November specification review · Draft for owner review.
 
@@ -191,7 +191,7 @@ Use named, versioned sections with stable rules and sorted allowed tools first. 
 
 Course project: `docs/specs/prompts.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [5: Specify context selection, budgets, and compression](https://github.com/jpboliv/meridian-agents/issues/5)
+## [5: Specify context selection, budgets, and compression](https://github.com/jpboliv/meridian-project/issues/5)
 
 Open · 0 — Design foundation
 
@@ -201,7 +201,7 @@ Which evidence reaches each model call, and what survives when the context grows
 
 #### Deliverable
 
-Update [specs/context.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/context.md) and link the evidence or decision here.
+Update [specs/context.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/context.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -219,7 +219,7 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/02-context-tools-skills/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/02-context-tools-skills/README.md)
+- [sessions/course-02-agentic-ai/02-context-tools-skills/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/02-context-tools-skills/README.md)
 
 #### Review
 
@@ -227,19 +227,19 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-18 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/5#issuecomment-6976560131)
+[2026-11-18 · jpboliv](https://github.com/jpboliv/meridian-project/issues/5#issuecomment-7064320942)
 
 Owner agreed on the handover rule: keep facts inline if omitting them could change the next decision, and link each to its original source. One fresh, read-only shift verified the 10:02 latency drop and 10:05 restart, left the later effect unresolved, and recommended investigating the currently slow database link. This was a fixture trial with an explicit source-check request, not a simulator run. Recorded locally in specs/context.md and docs/experiments.md under the course project. Budget overflow remains open.
 
-[2026-11-18 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/5#issuecomment-6979050758)
+[2026-11-18 · jpboliv](https://github.com/jpboliv/meridian-project/issues/5#issuecomment-7064321089)
 
 Agreed for shortened handovers: if a note includes a corrected claim, include the correction and its evidence in that same note. If they cannot fit together, omit the old claim from the handover and retain the full history on demand. This prevents the next shift from acting on stale advice before opening a separate correction. The earlier read-only trial did not test the overflow case.
 
-[2026-11-18 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/5#issuecomment-6979491361)
+[2026-11-18 · jpboliv](https://github.com/jpboliv/meridian-project/issues/5#issuecomment-7064321173)
 
 Verification scope: no separate restart simulation for overflow. Once shortening exists, inspect the output at a limit too small for the corrected note. Reuse existing coverage if it already proves whole notes are kept or dropped.
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/5#issuecomment-7009174154)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/5#issuecomment-7064321269)
 
 19 November specification review · Draft for owner review.
 
@@ -247,7 +247,7 @@ Draft limits: 20 model calls and 40,000 input tokens per shift across roles. Res
 
 Course project: `docs/specs/context.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [6: Specify memory creation, retrieval, correction, and deletion](https://github.com/jpboliv/meridian-agents/issues/6)
+## [6: Specify memory creation, retrieval, correction, and deletion](https://github.com/jpboliv/meridian-project/issues/6)
 
 Open · 0 — Design foundation
 
@@ -257,7 +257,7 @@ What deserves to be remembered, when is it applicable, and how is it corrected?
 
 #### Deliverable
 
-Update [specs/memory.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/memory.md) and link the evidence or decision here.
+Update [specs/memory.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/memory.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -276,8 +276,8 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [meridian/memory.py](https://github.com/jpboliv/meridian-agents/blob/main/meridian/memory.py)
-- [sessions/course-02-agentic-ai/04-memory/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/04-memory/README.md)
+- [meridian/memory.py](https://github.com/jpboliv/meridian-project/blob/main/meridian/memory.py)
+- [sessions/course-02-agentic-ai/04-memory/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/04-memory/README.md)
 
 #### Review
 
@@ -285,23 +285,23 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/6#issuecomment-6961789888)
+[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7064321755)
 
 Agreed handover evidence in ebbbdb7: retain timestamped observations, sources, the action receipt, and any uncertainty that changes the conclusion. One documented incident can justify a diagnostic clue. Recovery after an action alone does not establish cause. Lesson applicability remains open.
 
-[2026-11-18 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/6#issuecomment-6981637795)
+[2026-11-18 · jpboliv](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7064321982)
 
 Agreed: check a lesson’s observable prerequisite after a version change; skip it locally if unmet, without withdrawing the lesson. Ran four fresh read-only shifts crossing lesson/no lesson with per-instance readings/fleet mean only. Both fleet-only shifts left individual memory unknown. All four read the same three sources and recommended investigating the database path. No observed benefit on these measures; one run per condition with sources named up front. Recorded in the memory spec, experiment log, status and decision report.
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/6#issuecomment-7008399548)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7064322089)
 
 Agreed on 19 November: an agent may correct a specific factual claim when sources directly contradict it. Preserve the original record and attach the reason and sources. Flag ambiguous claims and avoid relying on them; reuse the existing operator handoff if uncertainty blocks a live decision. Changes to team permissions or procedures require operator approval.
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/6#issuecomment-7008518875)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7064322243)
 
 Agreed deletion rule: remove dead citations and copied material from lessons, summaries, and handovers; lookup and cache must not serve stale copies. Retain a claim as verified only with surviving independent support. Losing the restart action log leaves the latency observation intact but does not establish the event order or revive the old fix.
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/6#issuecomment-7009174149)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7064322359)
 
 19 November specification review · Draft for owner review.
 
@@ -309,7 +309,7 @@ Lessons default to the owning team across lookup, handover, and cache. Cross-tea
 
 Course project: `docs/specs/memory.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [7: Specify cache keys, freshness, and invalidation](https://github.com/jpboliv/meridian-agents/issues/7)
+## [7: Specify cache keys, freshness, and invalidation](https://github.com/jpboliv/meridian-project/issues/7)
 
 Open · 0 — Design foundation
 
@@ -319,7 +319,7 @@ When is reusing previous information correct, and when must the system fetch or 
 
 #### Deliverable
 
-Update [specs/caching.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/caching.md) and link the evidence or decision here.
+Update [specs/caching.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/caching.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -339,8 +339,8 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/09-efficiency/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/09-efficiency/README.md)
-- [sessions/course-02-agentic-ai/09-efficiency/starter/gateway.py](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/09-efficiency/starter/gateway.py)
+- [sessions/course-02-agentic-ai/09-efficiency/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/09-efficiency/README.md)
+- [sessions/course-02-agentic-ai/09-efficiency/starter/gateway.py](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/09-efficiency/starter/gateway.py)
 
 #### Review
 
@@ -348,7 +348,7 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/7#issuecomment-7009174498)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/7#issuecomment-7064322248)
 
 19 November specification review · Draft for owner review.
 
@@ -356,7 +356,7 @@ Reuse an exact runbook revision or a scoped incident summary only while sources,
 
 Course project: `docs/specs/caching.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [8: Define evaluation cases and comparison methodology](https://github.com/jpboliv/meridian-agents/issues/8)
+## [8: Define evaluation cases and comparison methodology](https://github.com/jpboliv/meridian-project/issues/8)
 
 Open · 0 — Design foundation
 
@@ -366,7 +366,7 @@ How will evidence distinguish a useful improvement from a cheaper but less relia
 
 #### Deliverable
 
-Update [specs/evaluation.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/evaluation.md) and link the evidence or decision here.
+Update [specs/evaluation.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/evaluation.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -387,9 +387,9 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [meridian/evaluate.py](https://github.com/jpboliv/meridian-agents/blob/main/meridian/evaluate.py)
-- [sessions/course-02-agentic-ai/06-evaluation/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/06-evaluation/README.md)
-- [sessions/course-02-agentic-ai/09-efficiency/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/09-efficiency/README.md)
+- [meridian/evaluate.py](https://github.com/jpboliv/meridian-project/blob/main/meridian/evaluate.py)
+- [sessions/course-02-agentic-ai/06-evaluation/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/06-evaluation/README.md)
+- [sessions/course-02-agentic-ai/09-efficiency/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/09-efficiency/README.md)
 
 #### Review
 
@@ -397,11 +397,11 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-6959596307)
+[2026-11-17 · jpboliv](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7064322749)
 
 Owner agreed on the metrics, adoption rule, and first three-shift comparison in 514c580. Trial counts and case-specific evidence are still open. Next design discussion: #2.
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/8#issuecomment-7009174771)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7064322882)
 
 19 November specification review · Draft for owner review.
 
@@ -409,7 +409,7 @@ Use three paired repetitions per case and version. Hold the model, simulator sta
 
 Course project: `docs/specs/evaluation.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [9: Specify permissions, approvals, and untrusted-data handling](https://github.com/jpboliv/meridian-agents/issues/9)
+## [9: Specify permissions, approvals, and untrusted-data handling](https://github.com/jpboliv/meridian-project/issues/9)
 
 Open · 0 — Design foundation
 
@@ -419,7 +419,7 @@ Which identities can read information or perform actions, and what does an appro
 
 #### Deliverable
 
-Update [specs/permissions.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/permissions.md) and link the evidence or decision here.
+Update [specs/permissions.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/permissions.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -438,8 +438,8 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/05-security/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/05-security/README.md)
-- [sessions/course-02-agentic-ai/03-mcp-integration/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/03-mcp-integration/README.md)
+- [sessions/course-02-agentic-ai/05-security/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/05-security/README.md)
+- [sessions/course-02-agentic-ai/03-mcp-integration/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/03-mcp-integration/README.md)
 
 #### Review
 
@@ -447,7 +447,7 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/9#issuecomment-7009175010)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/9#issuecomment-7064323214)
 
 19 November specification review · Draft for owner review.
 
@@ -455,7 +455,7 @@ Effective rights are the intersection of requester, role, and service credential
 
 Course project: `docs/specs/permissions.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [10: Specify specialist contracts and handoffs](https://github.com/jpboliv/meridian-agents/issues/10)
+## [10: Specify specialist contracts and handoffs](https://github.com/jpboliv/meridian-project/issues/10)
 
 Open · 0 — Design foundation
 
@@ -465,7 +465,7 @@ How does the orchestrator integrate distinct specialists without losing evidence
 
 #### Deliverable
 
-Update [specs/coordination.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/coordination.md) and link the evidence or decision here.
+Update [specs/coordination.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/coordination.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -484,8 +484,8 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/07-multi-agent/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/07-multi-agent/README.md)
-- [sessions/course-02-agentic-ai/08-agents-in-production/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/README.md)
+- [sessions/course-02-agentic-ai/07-multi-agent/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/07-multi-agent/README.md)
+- [sessions/course-02-agentic-ai/08-agents-in-production/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/README.md)
 
 #### Review
 
@@ -493,7 +493,7 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/10#issuecomment-7009175290)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/10#issuecomment-7064323769)
 
 19 November specification review · Draft for owner review.
 
@@ -501,7 +501,7 @@ The lead integrates two read-only specialists: infrastructure and application. G
 
 Course project: `docs/specs/coordination.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [11: Specify interruption and resume semantics](https://github.com/jpboliv/meridian-agents/issues/11)
+## [11: Specify interruption and resume semantics](https://github.com/jpboliv/meridian-project/issues/11)
 
 Open · 0 — Design foundation
 
@@ -511,7 +511,7 @@ After an interruption, how does the system know what happened and what remains a
 
 #### Deliverable
 
-Update [specs/execution.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/execution.md) and link the evidence or decision here.
+Update [specs/execution.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/execution.md) and link the evidence or decision here.
 
 The current specification is a draft. Record owner agreement before marking it Agreed.
 
@@ -531,9 +531,9 @@ The current specification is a draft. Record owner agreement before marking it A
 
 #### Course references
 
-- [meridian/actions.py](https://github.com/jpboliv/meridian-agents/blob/main/meridian/actions.py)
-- [sessions/course-02-agentic-ai/08-agents-in-production/starter/resume.py](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/starter/resume.py)
-- [sessions/course-02-agentic-ai/08-agents-in-production/lab/world.py](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/lab/world.py)
+- [meridian/actions.py](https://github.com/jpboliv/meridian-project/blob/main/meridian/actions.py)
+- [sessions/course-02-agentic-ai/08-agents-in-production/starter/resume.py](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/starter/resume.py)
+- [sessions/course-02-agentic-ai/08-agents-in-production/lab/world.py](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/lab/world.py)
 
 #### Review
 
@@ -541,7 +541,7 @@ The owner can explain the behavior and its tradeoffs. Record the result in STATU
 
 ### Discussion
 
-[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-agents/issues/11#issuecomment-7009175372)
+[2026-11-19 · jpboliv](https://github.com/jpboliv/meridian-project/issues/11#issuecomment-7064324608)
 
 19 November specification review · Draft for owner review.
 
@@ -549,7 +549,7 @@ Interrupt the worker after the executor applies a restart but before the checkpo
 
 Course project: `docs/specs/execution.md`. The consolidated review is in `docs/decision-report.html`.
 
-## [12: Build the first-line incident flow from agreed specifications](https://github.com/jpboliv/meridian-agents/issues/12)
+## [12: Build the first-line incident flow from agreed specifications](https://github.com/jpboliv/meridian-project/issues/12)
 
 Open · 1 — First-line agent
 
@@ -559,7 +559,7 @@ Implement the first complete incident-response flow on the supplied Meridian pla
 
 #### Deliverable
 
-Update [../README.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/README.md) and link the evidence or decision here.
+Update [../README.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/README.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -579,14 +579,14 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [meridian/agent_runtime.py](https://github.com/jpboliv/meridian-agents/blob/main/meridian/agent_runtime.py)
-- [sessions/course-02-agentic-ai/03-mcp-integration/starter/harness.py](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/03-mcp-integration/starter/harness.py)
+- [meridian/agent_runtime.py](https://github.com/jpboliv/meridian-project/blob/main/meridian/agent_runtime.py)
+- [sessions/course-02-agentic-ai/03-mcp-integration/starter/harness.py](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/03-mcp-integration/starter/harness.py)
 
 #### Review
 
 The owner can explain the behavior and its tradeoffs. Record the result in STATUS.md and the relevant decision or experiment entry.
 
-## [13: Record a reproducible first-line baseline and tag M1](https://github.com/jpboliv/meridian-agents/issues/13)
+## [13: Record a reproducible first-line baseline and tag M1](https://github.com/jpboliv/meridian-project/issues/13)
 
 Open · 1 — First-line agent
 
@@ -596,7 +596,7 @@ Establish the initial results used by all later comparisons.
 
 #### Deliverable
 
-Update [experiments.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/experiments.md) and link the evidence or decision here.
+Update [experiments.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/experiments.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -614,13 +614,13 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/06-evaluation/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/06-evaluation/README.md)
+- [sessions/course-02-agentic-ai/06-evaluation/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/06-evaluation/README.md)
 
 #### Review
 
 The owner can explain the behavior and its tradeoffs. Record the result in STATUS.md and the relevant decision or experiment entry.
 
-## [14: Implement the memory lifecycle and multi-shift scenarios](https://github.com/jpboliv/meridian-agents/issues/14)
+## [14: Implement the memory lifecycle and multi-shift scenarios](https://github.com/jpboliv/meridian-project/issues/14)
 
 Open · 2 — Memory-aware on-call agent
 
@@ -630,7 +630,7 @@ Apply the agreed memory policy across successive incidents.
 
 #### Deliverable
 
-Update [specs/memory.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/memory.md) and link the evidence or decision here.
+Update [specs/memory.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/memory.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -649,14 +649,14 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [meridian/memory.py](https://github.com/jpboliv/meridian-agents/blob/main/meridian/memory.py)
-- [sessions/course-02-agentic-ai/04-memory/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/04-memory/README.md)
+- [meridian/memory.py](https://github.com/jpboliv/meridian-project/blob/main/meridian/memory.py)
+- [sessions/course-02-agentic-ai/04-memory/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/04-memory/README.md)
 
 #### Review
 
 The owner can explain the behavior and its tradeoffs. Record the result in STATUS.md and the relevant decision or experiment entry.
 
-## [15: Integrate identity, approvals, and data protection](https://github.com/jpboliv/meridian-agents/issues/15)
+## [15: Integrate identity, approvals, and data protection](https://github.com/jpboliv/meridian-project/issues/15)
 
 Open · 2 — Memory-aware on-call agent
 
@@ -666,7 +666,7 @@ Apply the security contract to the integrated incident flow.
 
 #### Deliverable
 
-Update [specs/permissions.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/permissions.md) and link the evidence or decision here.
+Update [specs/permissions.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/permissions.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -684,13 +684,13 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/05-security/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/05-security/README.md)
+- [sessions/course-02-agentic-ai/05-security/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/05-security/README.md)
 
 #### Review
 
 The owner can explain the behavior and its tradeoffs. Record the result in STATUS.md and the relevant decision or experiment entry.
 
-## [16: Implement version-aware caching and context controls](https://github.com/jpboliv/meridian-agents/issues/16)
+## [16: Implement version-aware caching and context controls](https://github.com/jpboliv/meridian-project/issues/16)
 
 Open · 2 — Memory-aware on-call agent
 
@@ -700,7 +700,7 @@ Reuse information under the agreed freshness and isolation rules.
 
 #### Deliverable
 
-Update [specs/caching.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/caching.md) and link the evidence or decision here.
+Update [specs/caching.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/caching.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -720,13 +720,13 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/09-efficiency/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/09-efficiency/README.md)
+- [sessions/course-02-agentic-ai/09-efficiency/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/09-efficiency/README.md)
 
 #### Review
 
 The owner can explain the behavior and its tradeoffs. Record the result in STATUS.md and the relevant decision or experiment entry.
 
-## [17: Compare memory and caching policies and tag M2](https://github.com/jpboliv/meridian-agents/issues/17)
+## [17: Compare memory and caching policies and tag M2](https://github.com/jpboliv/meridian-project/issues/17)
 
 Open · 2 — Memory-aware on-call agent
 
@@ -736,7 +736,7 @@ Measure which policy changes help and which introduce stale information or extra
 
 #### Deliverable
 
-Update [experiments.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/experiments.md) and link the evidence or decision here.
+Update [experiments.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/experiments.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -757,14 +757,14 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/06-evaluation/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/06-evaluation/README.md)
-- [sessions/course-02-agentic-ai/09-efficiency/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/09-efficiency/README.md)
+- [sessions/course-02-agentic-ai/06-evaluation/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/06-evaluation/README.md)
+- [sessions/course-02-agentic-ai/09-efficiency/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/09-efficiency/README.md)
 
 #### Review
 
 The owner can explain the behavior and its tradeoffs. Record the result in STATUS.md and the relevant decision or experiment entry.
 
-## [18: Integrate specialists with evidence-backed handoffs](https://github.com/jpboliv/meridian-agents/issues/18)
+## [18: Integrate specialists with evidence-backed handoffs](https://github.com/jpboliv/meridian-project/issues/18)
 
 Open · 3 — Coordinated, resumable response
 
@@ -774,7 +774,7 @@ Apply the agreed task contracts to a coordinated incident team.
 
 #### Deliverable
 
-Update [specs/coordination.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/coordination.md) and link the evidence or decision here.
+Update [specs/coordination.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/coordination.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -794,13 +794,13 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/07-multi-agent/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/07-multi-agent/README.md)
+- [sessions/course-02-agentic-ai/07-multi-agent/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/07-multi-agent/README.md)
 
 #### Review
 
 The owner can explain the behavior and its tradeoffs. Record the result in STATUS.md and the relevant decision or experiment entry.
 
-## [19: Implement durable resume and tag M3](https://github.com/jpboliv/meridian-agents/issues/19)
+## [19: Implement durable resume and tag M3](https://github.com/jpboliv/meridian-project/issues/19)
 
 Open · 3 — Coordinated, resumable response
 
@@ -810,7 +810,7 @@ Recover an interrupted incident using durable execution evidence.
 
 #### Deliverable
 
-Update [specs/execution.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/specs/execution.md) and link the evidence or decision here.
+Update [specs/execution.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/specs/execution.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -829,13 +829,13 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [sessions/course-02-agentic-ai/08-agents-in-production/README.md](https://github.com/jpboliv/meridian-agents/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/README.md)
+- [sessions/course-02-agentic-ai/08-agents-in-production/README.md](https://github.com/jpboliv/meridian-project/blob/main/sessions/course-02-agentic-ai/08-agents-in-production/README.md)
 
 #### Review
 
 The owner can explain the behavior and its tradeoffs. Record the result in STATUS.md and the relevant decision or experiment entry.
 
-## [20: Prepare final evidence, documentation, and demonstration](https://github.com/jpboliv/meridian-agents/issues/20)
+## [20: Prepare final evidence, documentation, and demonstration](https://github.com/jpboliv/meridian-project/issues/20)
 
 Open · 4 — Evidence and delivery
 
@@ -845,7 +845,7 @@ Produce a reproducible submission that the owner can explain.
 
 #### Deliverable
 
-Update [project.md](https://github.com/jpboliv/meridian-agents/blob/main/projects/course-02-agentic-ai/docs/project.md) and link the evidence or decision here.
+Update [project.md](https://github.com/jpboliv/meridian-project/blob/main/projects/course-02-agentic-ai/docs/project.md) and link the evidence or decision here.
 
 Begin after the linked specifications are agreed and prerequisite work is complete. Split this issue into smaller tasks when the contracts are clear.
 
@@ -864,8 +864,8 @@ Begin after the linked specifications are agreed and prerequisite work is comple
 
 #### Course references
 
-- [ROADMAP.md](https://github.com/jpboliv/meridian-agents/blob/main/ROADMAP.md)
-- [STATUS.md](https://github.com/jpboliv/meridian-agents/blob/main/STATUS.md)
+- [ROADMAP.md](https://github.com/jpboliv/meridian-project/blob/main/ROADMAP.md)
+- [STATUS.md](https://github.com/jpboliv/meridian-project/blob/main/STATUS.md)
 
 #### Review
 

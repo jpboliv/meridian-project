@@ -1,6 +1,6 @@
 # Project goals
 
-Draft for owner review · [Issue 1](https://github.com/jpboliv/meridian-agents/issues/1).
+Draft for owner review · [Issue 22](https://github.com/jpboliv/meridian-project/issues/22).
 
 The user is the on-call engineer at Meridian, a simulated stock exchange. The engineer needs to know what happened, whether to act, and whether the service recovered. The project asks when an earlier shift saves investigation time and when it points the next shift at the wrong fix.
 

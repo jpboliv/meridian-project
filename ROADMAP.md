@@ -17,23 +17,25 @@ Dates through 28 November are planning targets. The rehearsal target is **29 Nov
 
 ## How to use the backlog
 
-[Design issues #1–11][design] hold the contracts. They all have drafts. Review the first-line contracts now, memory and access before M2, and specialist handoff and resume before M3. Individual agreed rules do not make the whole specification Agreed.
+[Design foundation][design] holds the eleven specification issues. They all have drafts. Review the first-line contracts now, memory and access before M2, and specialist handoff and resume before M3. Individual agreed rules do not make the whole specification Agreed.
+
+Open a pull request in `jpboliv/meridian-project` when work starts on each milestone. Assign it to the same milestone as its issues and link the evidence for owner review before merging or tagging.
 
 If time gets tight, defer [#16][16] (caching tool results), prompt fingerprints, and summary-cost comparisons. **Keep #21:** it is the presentation’s prompt-caching experiment, and the simulator gives it a correctness check.
 
 [Live milestones][milestones] track the work; [STATUS.md](STATUS.md) records the latest evidence and next decision.
 
-[8]: https://github.com/jpboliv/meridian-agents/issues/8
-[12]: https://github.com/jpboliv/meridian-agents/issues/12
-[13]: https://github.com/jpboliv/meridian-agents/issues/13
-[14]: https://github.com/jpboliv/meridian-agents/issues/14
-[15]: https://github.com/jpboliv/meridian-agents/issues/15
-[16]: https://github.com/jpboliv/meridian-agents/issues/16
-[17]: https://github.com/jpboliv/meridian-agents/issues/17
-[18]: https://github.com/jpboliv/meridian-agents/issues/18
-[19]: https://github.com/jpboliv/meridian-agents/issues/19
-[20]: https://github.com/jpboliv/meridian-agents/issues/20
-[21]: https://github.com/jpboliv/meridian-agents/issues/21
-[design]: https://github.com/jpboliv/meridian-agents/milestone/1
-[milestones]: https://github.com/jpboliv/meridian-agents/milestones
+[8]: https://github.com/jpboliv/meridian-project/issues/8
+[12]: https://github.com/jpboliv/meridian-project/issues/12
+[13]: https://github.com/jpboliv/meridian-project/issues/13
+[14]: https://github.com/jpboliv/meridian-project/issues/14
+[15]: https://github.com/jpboliv/meridian-project/issues/15
+[16]: https://github.com/jpboliv/meridian-project/issues/16
+[17]: https://github.com/jpboliv/meridian-project/issues/17
+[18]: https://github.com/jpboliv/meridian-project/issues/18
+[19]: https://github.com/jpboliv/meridian-project/issues/19
+[20]: https://github.com/jpboliv/meridian-project/issues/20
+[21]: https://github.com/jpboliv/meridian-project/issues/21
+[design]: https://github.com/jpboliv/meridian-project/milestone/2
+[milestones]: https://github.com/jpboliv/meridian-project/milestones
 [traces]: projects/course-02-agentic-ai/docs/experiments.md#case-e-the-healthy-but-stale-monitor
