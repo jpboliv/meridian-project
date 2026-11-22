@@ -10,3 +10,4 @@
 8. The orchestrator uses the HERDR CLI to run task agents in their own panes. Close the implementer's pane before a fresh, independent Claude Opus 5.5 reviewer at high effort reviews that PR. Fix High and Medium findings, have a fresh reviewer check the changed head, then merge the clean, checked PR.
 9. At planning, implementation, and review, ask: “Is this really necessary?”
 10. Merging is delegated; specification agreement (rule 4) and live-run settings and spending still need separate owner decisions.
+11. Before tuning, verify from inside the isolated development environment that held-out evaluator material is inaccessible. Stop if it is visible.
