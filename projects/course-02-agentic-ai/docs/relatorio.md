@@ -1,6 +1,6 @@
 # Meridian: o agente de primeira linha
 
-Projeto Agentic AI · M1 testado offline (`gateway-m1.6`) · dois pilotos reais no caso B, um por revisão (`gateway-m1.5` falhou, `gateway-m1.6` passou), sem linha de base
+Projeto Agentic AI · M1 testado offline (`gateway-m1.6`) · linha de base real com 15 execuções públicas: 9/15 passaram · dois pilotos anteriores no caso B
 
 ## Pergunta
 
@@ -58,7 +58,7 @@ flowchart TD
 
 ## Evidência
 
-Os cinco casos passaram com decisões programadas em `gateway-m1.6`, com os mesmos resultados de `gateway-m1.5` ([registos](../first_line/offline-traces-m1.6.jsonl)). O laboratório offline usa só estas decisões programadas. Com o modelo real houve dois pilotos no caso B, um em cada revisão (ver abaixo).
+Os cinco casos passaram com decisões programadas em `gateway-m1.6`, com os mesmos resultados de `gateway-m1.5` ([registos](../first_line/offline-traces-m1.6.jsonl)). O laboratório offline usa só estas decisões programadas. Com o modelo real houve dois pilotos no caso B, um em cada revisão, e depois a linha de base com 15 execuções (ver abaixo).
 
 **Reinício, caso A.** A instância 2 estava a 93,9 % de memória e as ligações ativas. Após o reinício aprovado (tick 23): 6,5, 5,0 e 5,0 ms. [Registo A](../first_line/offline-traces-m1.6.jsonl#L1).
 
@@ -71,6 +71,8 @@ Os cinco casos passaram com decisões programadas em `gateway-m1.6`, com os mesm
 - **Depois (`gateway-m1.6`, 2 pedidos).** O modelo escolheu ler os tickets e depois as instâncias. Após o tempo limite do monitor, o código repetiu uma vez, verificou as duas ligações e produziu a passagem ao operador, a pedir leituras das duas instâncias. Passou nas 11 verificações, sem efeitos. [Registo](../first_line/live-pilot-b-m1.6-2026-11-21.jsonl#L1).
 
 Custo a preços padrão: 0,0001781 USD antes e 0,0001389 USD depois (estimativa, não fatura). Há uma só observação por revisão, por isso não prova que a alteração causou a diferença. Também não é linha de base nem resultado do #21.
+
+**Linha de base real (22 nov. 2026, `gateway-m1.6`).** Três rondas de A a E, cada execução nova, com `gpt-6-luna`, até 6 pedidos e 512 tokens de saída por pedido. Passaram 9 de 15: A 1/3, B 3/3, C 3/3, D 2/3, E 0/3. Houve quatro reinícios autorizados, todos na instância certa, e nenhum outro efeito. Nas falhas de E, o modelo esgotou os pedidos sem passar ao operador; em duas delas nunca leu a ligação. Custo estimado a preços padrão: 0,0075555 USD (não é fatura). Três tentativas por caso não chegam para estimar uma taxa. [Resultado e registos](experiments.md#2026-11-22-public-m1-baseline-gateway-m16).
 
 **Prefixo, offline.** Em 13 pares de decisões seguidas, o JSON do utilizador partilha 22 bytes iniciais (mediana) com a hora no início e 920 com ela no fim. São bytes, não tokens: não mostram leituras da cache nem se o prefixo chega aos 1024 tokens exigidos ([notas](experiments.md#context-reuse-arms-prepared-offline)).
 
@@ -86,4 +88,4 @@ Escolha um caso de A a E e carregue em **Executar caso**.
 
 ## Utilização de IA
 
-Escrito com assistentes de IA, incluindo o Claude Code; os resultados programados acima não usam nenhum modelo; só os dois pilotos reais do caso B usaram o `gpt-6-luna`.
+Escrito com assistentes de IA, incluindo o Claude Code; os resultados programados acima não usam nenhum modelo; só os dois pilotos reais do caso B e as 15 execuções da linha de base usaram o `gpt-6-luna`.

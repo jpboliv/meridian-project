@@ -11,7 +11,7 @@ It grows in three milestones:
 
 Start with the [project goals](docs/project.md) and [reference incident](docs/reference-incident.md). Follow the [roadmap](../../ROADMAP.md) for milestone outcomes.
 
-For the class presentation, use [the short report in Portuguese](docs/relatorio.md): the context-reuse question, the architecture, one verified restart and one controlled failure with their `gateway-m1.6` traces, the `gateway-m1.5` live pilot, and what remains unmeasured.
+For the class presentation, use [the short report in Portuguese](docs/relatorio.md): the context-reuse question, the architecture, one verified restart and one controlled failure with their `gateway-m1.6` traces, the two live Case B pilots, the [15-run public live baseline](docs/experiments.md#2026-11-22-public-m1-baseline-gateway-m16) (9/15 passed), and what remains unmeasured.
 
 ## Run the first-line cases
 

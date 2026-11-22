@@ -4,7 +4,7 @@
 
 Run the same three shifts with memory off and on. For each incident, count how often each version makes the right decision and can show why. Then compare costs.
 
-Draft protocol for owner review · [Issue 8](https://github.com/jpboliv/meridian-project/issues/8). The metrics and adoption blockers below are Agreed.
+Draft protocol for owner review · [Issue 8](https://github.com/jpboliv/meridian-project/issues/8). The metrics, adoption blockers and public M1 baseline below are Agreed.
 
 Compare versions on the same starting state. Reset memory between independent trials and preserve it across shifts within a trial. Record per-case outcomes, effects, source calls, and model usage.
 
@@ -31,7 +31,11 @@ Prompt-caching comparison: repeat the same incidents in pairs. Change only the t
 
 Memory comparison: keep the application cache off, use one prompt layout, and give both versions the full v2 runbook. Test whether the sourced reminder changes the order or cost of reads to a correct decision. The runbook already calls for instance readings. Do not count the reminder as new diagnostic knowledge. Run the corrected-handover case separately. If the reminder does not help, report that result. Lookup versus automatic handover, selection algorithms, shortening, and source-cache variants are follow-up comparisons.
 
-## Draft: M1 baseline
+<a id="draft-m1-baseline"></a>
+
+## Agreed: M1 baseline
+
+**Status (22 November).** The owner [agreed these public settings and directed the batch](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7086335855) under the USD 0.10 monitored allowance. All 15 slots ran and the authorization is spent: [result](../experiments.md#2026-11-22-public-m1-baseline-gateway-m16). The earlier one-run pilot authorizations are historical. No further paid run is authorized.
 
 **Purpose and owner decisions.** The 15 stand-alone A–E runs ask whether one frozen system reliably verifies each public case under the same limits. This descriptive M1 evidence applies to the frozen setup and these public cases. Collect it if M1 needs a live baseline. The owner can skip the batch if only paired work is wanted. Never reuse these runs as an arm in a causal comparison. Approve public batch settings under [#8](https://github.com/jpboliv/meridian-project/issues/8) and authorize spending separately. Both one-off pilot authorizations are consumed.
 
