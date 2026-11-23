@@ -4,6 +4,7 @@ acceptance controls and the summary. No key, network or provider charge."""
 import asyncio
 import copy
 import json
+import shutil
 import signal
 
 import pytest
@@ -293,6 +294,39 @@ def test_live_slot_refuses_drift_from_the_frozen_protocol(change, message, monke
     with pytest.raises(SystemExit, match=message):
         run(study.main([str(ledger) if arg == "ledger.jsonl" else arg for arg in LIVE]))
     assert len(ledger_rows(ledger)) == 1  # no start record
+
+
+@pytest.mark.parametrize("relative_path", [
+    "projects/course-02-agentic-ai/first_line/case_checks.py",
+    "projects/course-02-agentic-ai/first_line/cases/shift-c.yaml",
+    "projects/course-02-agentic-ai/first_line/checks/shift-c.yaml",
+    "meridian/data/runbooks/order-gateway-latency-v2.md",
+    "meridian/tools.py",
+    "uv.lock",
+], ids=["grader", "scenario", "checks", "runbook", "tools", "lockfile"])
+def test_live_slot_refuses_changed_public_input(relative_path, monkeypatch, tmp_path):
+    root = tmp_path / "archive"
+    here = root / study.HERE.relative_to(study.ROOT)
+    shutil.copytree(study.HERE, here)
+    shutil.copytree(study.ROOT / "meridian", root / "meridian")
+    for name in ("pyproject.toml", "uv.lock"):
+        shutil.copyfile(study.ROOT / name, root / name)
+    monkeypatch.setattr(study, "ROOT", root)
+    monkeypatch.setattr(study, "HERE", here)
+    monkeypatch.setattr(study, "require_api_key", lambda: pytest.fail("no key may be loaded"))
+    ledger = tmp_path / "ledger.jsonl"
+    freeze(ledger)
+    protocol, = ledger_rows(ledger)
+    assert relative_path in protocol["harness_sha256"]
+    study.preflight(ledger, study.slot_plan()[0], protocol["max_requests"], protocol["max_output_tokens_per_request"])
+
+    path = root / relative_path
+    with path.open("ab") as file:
+        file.write(b"\n# changed after freezing\n")
+
+    with pytest.raises(SystemExit, match="harness differs"):
+        run(study.main([str(ledger) if arg == "ledger.jsonl" else arg for arg in LIVE]))
+    assert ledger_rows(ledger) == [protocol]
 
 
 def test_live_slot_needs_a_frozen_protocol_with_the_same_limits(monkeypatch, tmp_path):

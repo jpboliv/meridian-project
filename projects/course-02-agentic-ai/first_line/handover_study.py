@@ -45,7 +45,7 @@ PAIRS = 3
 REMINDER_ID = "INC-4100/shift-1/compare"
 # The fixed public A setup must reproduce this reminder (text, condition and cited evidence) before any request.
 REMINDER_SHA256 = "6719e04aaf16ba5dcb2b74138c5fd938673e5c00c812ebc4c9bf79f9bb829b70"
-HARNESS = ("shift.py", "scoped_shift.py", "scoped_memory.py", "scoped_access.py", "pilot.py", "handover_study.py")
+ROOT = HERE.parents[2]
 OFFLINE = "offline scripted decisions (no LLM)"
 
 
@@ -150,7 +150,21 @@ async def reminder_setup():
 
 
 def harness_hashes():
-    return {name: hashlib.sha256((HERE / name).read_bytes()).hexdigest() for name in HARNESS}
+    """Hash public runtime and grading inputs by repository-relative path, without Git."""
+    simulator = ROOT / "meridian"
+    paths = [
+        ROOT / "pyproject.toml",
+        ROOT / "uv.lock",
+        *HERE.glob("*.py"),
+        *(HERE / "cases").rglob("*.yaml"),
+        *(HERE / "cases-m2").rglob("*.yaml"),
+        *HERE.glob("checks/**/*.yaml"),
+        *simulator.rglob("*.py"),
+        *(simulator / "data").rglob("*.yaml"),
+        *(simulator / "data").rglob("*.md"),
+    ]
+    return {path.relative_to(ROOT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(paths) if not path.name.startswith("test_")}
 
 
 async def run_arm(slot, memory, setup, pilot=None, driver=investigate, requester=REQUESTER):
@@ -726,7 +740,11 @@ def preflight(path, slot, max_requests, max_output_tokens):
     protocol, problems = protocols[0], []
     if protocol.get("study") != STUDY or protocol.get("plan") != slot_plan():
         problems.append("the protocol names another study revision or plan")
-    if protocol.get("harness_sha256") != harness_hashes():
+    try:
+        hashes = harness_hashes()
+    except OSError:
+        raise SystemExit("Not started: a public execution input could not be read. No key was loaded.") from None
+    if protocol.get("harness_sha256") != hashes:
         problems.append("the harness differs from the frozen protocol")
     if protocol.get("reminder_sha256") != REMINDER_SHA256:
         problems.append("the reminder hash differs from the frozen protocol")
