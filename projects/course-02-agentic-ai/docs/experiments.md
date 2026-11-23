@@ -8,6 +8,46 @@ Before editing, public A loaded inside bubblewrap from a writable tracked-only a
 
 All 248 offline tests passed. The [replay commands below](#reproduce) match the checked-in traces. The five M1 traces match byte for byte. Five of the 14 M2 records gain only access classification metadata. The 17-row study trace changes only the `scoped_access.py` fingerprint in the 12 scripted slots. Decisions, outcomes and tool counts match the base. To reproduce the historical M2 and study traces, run those commands from a tracked archive of `74e2677` with the same offline environment. Both matched their archived files byte for byte.
 
+# 2026-11-23: live M2 results
+
+**Keep the full runbook alone as the default.** In the recurrence case the model saw the sourced reminder but did the same work. Keep the scoped memory and correction mechanism for handover; this result is about adding one particular reminder. In the separate prompt-layout study, moving the clock did not produce provider cache hits.
+
+Both studies ran on reviewed source `85ed8d0` under the [owner's one-time authorization](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7114140964). All 57 planned slots ran once, with no replacements, failures, unrun slots or adoption blockers. All 205 requests returned `gpt-6-luna`. The provider exposes an alias, not an independently pinned backend revision. Limits: six requests per slot, 512 output tokens per request, temperature unset, no application cache, public simulator cases only. Estimates use reported ordinary input, cache reads, writes and output at respectively USD 0.10, 0.01, 0.125 and 0.50 per million tokens. They are not invoices.
+
+### #17: does the sourced reminder help?
+
+| Arm | C | D | Requests | Input / output tokens | Cache read / write tokens | Estimated USD |
+|---|---:|---:|---:|---:|---:|---:|
+| Full runbook | 3/3 | 3/3 | 24 | 16,455 / 1,186 | 0 / 0 | 0.002238500 |
+| Same runbook + eligible reminder | 3/3 | 3/3 | 24 | 19,011 / 1,197 | 4,310 / 2,155 | 0.002165575 |
+
+In all three C pairs both arms chose **tickets → instances → links → restart**, made six investigative tool reads, and restarted `order-gateway-1` once with approval. Unlike the offline driver, the model did not change the read order. The reminder appeared at two decisions in each treated C slot. Total input plus output tokens were higher in all three exposed pairs; the cheaper billed-token estimate for the reminder arm reflects cache reuse, not fewer tokens or reads. **Zero of three exposed pairs met the effort-gain rule.** In D the reminder was correctly filtered in all three treated slots. Both arms made six reads and handed over the degraded reference-db link with no effect. D is a leak/variance control, not evidence about what a model would do if shown stale advice.
+
+Including the fixed A setup, the reminder arm wrote 57 sources and 12 lessons, did 60 searches and 30 lookups, and sent 7,344 bytes of reminder text. The runbook arm wrote 27 sources and six lessons, did 30 searches and no lookups. These are operation counts, not priced latency. Separate **offline** controls scored the stored correction 5/5 and next-shift behavior 4/4, and verified deletion and cross-team isolation. Total live estimate: **USD 0.004404075** against the USD 0.15 allowance.
+
+### #21: did cache writes pay off?
+
+| Arm | Verified | Requests | Input / output tokens | Cache read / write tokens | Estimated USD |
+|---|---:|---:|---:|---:|---:|
+| Time first, automatic | 15/15 | 54 | 36,534 / 3,130 | 0 / 0 | 0.0052184 |
+| Time last, automatic (shared control) | 15/15 | 51 | 34,137 / 2,872 | 0 / 0 | 0.0048497 |
+| Time last, caching off | 15/15 | 52 | 34,936 / 2,758 | 0 / 0 | 0.0048726 |
+
+A, B, C, D and E each passed 3/3 **in every arm**. Each arm had three permitted A restarts of `order-gateway-2`, three permitted C restarts of `order-gateway-1`, and no other effects. There were no paired outcome regressions. The automatic time-last arm was cheaper in 8/15 comparisons against time-first and 10/15 against caching off. Request counts for A/B/C/D were identical across arms (12/6/12/12); E took 12, 9 and 10 requests respectively. **Zero reads and zero writes were reported on all 157 requests.** Inputs were 571–803 tokens, below the provider's documented 1,024-token cache threshold. The differences in whole-incident costs cannot be attributed to cache hits, and with no writes their payback was not tested. Do not adopt a cache optimization on this evidence. Total estimate: **USD 0.0149407** against USD 0.50.
+
+### Reproduce the live analysis without a provider call
+
+From the repository root with the locked Python environment installed:
+
+```sh
+d=projects/course-02-agentic-ai
+e=$d/first_line/public-results-m2-2026-11-23
+PYTHONPATH=. python "$d/first_line/handover_study.py" --summarize "$e/reminder-ledger.jsonl"
+python "$d/study_results/reuse_results.py" "$e/cache-slots.jsonl"
+```
+
+[Reminder protocol, starts and slot results](../first_line/public-results-m2-2026-11-23/reminder-ledger.jsonl) · [Cache slot results](../first_line/public-results-m2-2026-11-23/cache-slots.jsonl). The first command uses the frozen rule whose `Draft` string predates owner agreement. The second computes costs for every case/arm and compares matching case/round slots. Combined estimate: **USD 0.019344775**. The small, counterbalanced public studies do not establish a general model benefit, provider cache warmth cannot be reset, and no reserved cases were run.
+
 # 2026-11-23 M2 handover comparison, prepared offline
 
 [#17](https://github.com/jpboliv/meridian-project/issues/17). Question: when both versions get the full v2 runbook, does a sourced reminder from an earlier shift change the reads needed for a verified decision? This entry prepares that comparison and records its offline controls. No model was called, and no live run, key or spending was used. Live settings and spending need separate owner decisions.

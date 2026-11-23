@@ -1,6 +1,8 @@
 # Current focus
 
-23 November: the owner [approved the #17 and #21 public live studies](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7114140964) on the reviewed code at `85ed8d0`. Run #17 first, then #21. Separate monitored allowances are USD 0.15 and USD 0.50; the stop rules apply before the next slot. Results and milestone acceptance are pending.
+Both [M2 live studies](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-live-m2-results) finished: 12/12 reminder slots and 45/45 caching slots passed. Keep the runbook alone: same six reads in every exposed pair. The timestamp/cache study saw zero cache reads and writes. Combined estimated cost USD 0.019344775; no replacement or reserved runs. The one-time authorizations are consumed. [PR #38](https://github.com/jpboliv/meridian-project/pull/38) holds the evidence for release review; the M2 tag awaits owner acceptance.
+
+23 November: the owner [approved the #17 and #21 public live studies](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7114140964) on the reviewed code at `85ed8d0`. #17 ran first, then #21. Separate monitored allowances were USD 0.15 and USD 0.50.
 
 [PR #37 merged](https://github.com/jpboliv/meridian-project/pull/37) at `85ed8d0`. The [final independent review](https://github.com/jpboliv/meridian-project/pull/37#issuecomment-7113966576) approved `77541bf` with no High or Medium findings and reproduced 254 offline tests and the study, M2 and five M1 traces. The M2 memory and access implementation issues (#14 and #15) are closed. No live study has run. Next: the [#17 decision rule](https://github.com/jpboliv/meridian-project/issues/17#issuecomment-7113975097) and [settings and spending for #17 and #21](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7108146651) need owner decisions before running the comparisons. M2 remains untagged.
 
