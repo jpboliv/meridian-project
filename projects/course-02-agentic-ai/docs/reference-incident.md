@@ -30,6 +30,8 @@ Test three outcomes: the retry succeeds, an independent source gives a useful le
 
 Case E is a separate failure branch. At 10:00 the gateway slows down. Its monitor still answers, but the last healthy sample is from 09:00. Keep the sample time distinct from the time of the tool call. Do not use it to establish current health or authorize a restart. Consult the independent link monitor. Hand over the degraded gateway-to-database link with its fresh source reading. Do not declare recovery or change the exchange.
 
+Implementation note (`gateway-m1.7`, offline only). In the public baseline the live model kept rereading the 09:00 samples. Now, if a refresh brings no newer sample time while samples are stale, code applies this rule and the missing-reading rule above. It reads the link monitor once if it is unread. It then hands over a single observed faulty link with its source, or names the stale replicas and link readings and stops without a fault claim. The report marks this as a harness decision (`stale_evidence`). The rule is not tied to a particular link or replica. [Evidence and limits](experiments.md#2026-11-23-offline-follow-up-to-the-baseline-failures-gateway-m17).
+
 ## The wrongly credited restart
 
 Start this case with a saved lesson: “Restarting the gateway fixed the delay.” A later review gives the agent two sources. Latency started falling at [10:02](cases/restart/latency.md). The action log records the restart at [10:05](cases/restart/actions.md).

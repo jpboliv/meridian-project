@@ -8,6 +8,11 @@ the decision raises `RequestCapStop`. The caller hands over with a reason that n
 `max_output_tokens` is set on every request. It limits each response, so a case produces at most
 `max_requests × max_output_tokens` output tokens. Input tokens are measured, not capped.
 
+A decision that fails for any other reason is handed over with one bounded code (`classify`, gateway-m1.7):
+`output_limit`, `validation_exhausted`, `provider_error` or `unknown`. It comes from the SDK exception type and
+the decision's own 200 responses (`status`, `incomplete_details.reason`, kept per attempt as known codes only),
+never from provider text or from an output-token count at the limit.
+
 Provider prompt caching (#21) is observed, not simulated. Each attempt records the provider-reported
 `usage.input_tokens_details.cached_tokens` and `cache_write_tokens`. The OpenAI prompt-caching guide describes
 them as disjoint subsets of `input_tokens`, so they are never added to it. A missing, invalid, inconsistent, or
@@ -30,14 +35,45 @@ from pathlib import Path
 
 import httpx2
 from openai import AsyncOpenAI
-from pydantic_ai.exceptions import AgentRunError
+from pydantic_ai.exceptions import AgentRunError, ModelAPIError, UnexpectedModelBehavior
 from pydantic_ai.models.openai import OpenAIResponsesModel, OpenAIResponsesModelSettings
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from shift import live_decider
+from shift import OUTPUT_RETRIES, DecisionFailed, live_decider
 
 USAGE = ("input_tokens", "output_tokens")
 CACHE_USAGE = ("cached_tokens", "cache_write_tokens")  # under usage.input_tokens_details
+# Structured signals kept from a 200 JSON response, as bounded codes; any other value is recorded as "other".
+RESPONSE_STATUSES = ("completed", "incomplete", "failed", "cancelled", "in_progress", "queued")
+INCOMPLETE_REASONS = ("max_output_tokens", "content_filter")
+SIGNALS = ("response_status", "incomplete_reason")
+
+
+def known_code(value, known):
+    return None if value is None else value if value in known else "other"
+
+
+def classify(error, attempts) -> str:
+    """Why one decision failed, from its own requests only (so no earlier decision's reason carries over).
+
+    `provider_error`: the SDK reports a provider, HTTP or transport failure. `output_limit`: the decision's last
+    response says `incomplete` with reason `max_output_tokens`. `validation_exhausted`: every request for the
+    decision (the first answer and its one repair) was a completed 200 response, and the output still failed
+    validation. Anything else, including mixed signals, is `unknown`. Token counts are never used: a completed
+    response that reports exactly the output limit is not evidence of truncation."""
+    if isinstance(error, ModelAPIError):
+        return "provider_error"
+    if not isinstance(error, UnexpectedModelBehavior) or not attempts or any(a["status"] != 200 for a in attempts):
+        return "unknown"
+    last = attempts[-1]
+    if (last["response_status"], last["incomplete_reason"]) == ("incomplete", "max_output_tokens"):
+        return "output_limit"
+    if (type(error) is UnexpectedModelBehavior and len(attempts) == OUTPUT_RETRIES + 1
+            and all(a["response_status"] == "completed" for a in attempts)):
+        return "validation_exhausted"
+    return "unknown"
+
+
 # #21 arms: where the current simulated time goes, and the prompt-cache options sent (None: provider default).
 ARMS = {"time-first": ("first", None), "time-last": ("last", None),
         "time-last-no-cache": ("last", {"mode": "explicit"})}
@@ -78,7 +114,7 @@ class ProviderBudget:
         if len(self.attempts) >= self.max_requests:
             self.refused += 1
             raise RequestCapReached("provider request cap reached", request=request)
-        row = {"status": None, "model": None, **dict.fromkeys(USAGE + CACHE_USAGE)}
+        row = {"status": None, "model": None, **dict.fromkeys(SIGNALS + USAGE + CACHE_USAGE)}
         self.attempts.append(row)
         self._open[id(request)] = row
 
@@ -98,6 +134,9 @@ class ProviderBudget:
             return
         if isinstance(body.get("model"), str):
             row["model"] = body["model"]
+        details = body.get("incomplete_details") if isinstance(body.get("incomplete_details"), dict) else {}
+        row["response_status"] = known_code(body.get("status"), RESPONSE_STATUSES)
+        row["incomplete_reason"] = known_code(details.get("reason"), INCOMPLETE_REASONS)
         usage = body.get("usage") if isinstance(body.get("usage"), dict) else {}
         details = usage.get("input_tokens_details") if isinstance(usage.get("input_tokens_details"), dict) else {}
         for key in USAGE:
@@ -170,13 +209,14 @@ class Pilot:
         async def bounded(context):
             if self.timestamp_position:
                 context = with_current_time(context, clock(), self.timestamp_position)
-            first = len(self.budget.attempts)
+            first, refused = len(self.budget.attempts), self.budget.refused
             try:
                 decision = await decide(context)
             except AgentRunError as error:
-                if self.budget.refused:
+                if self.budget.refused > refused:
                     raise RequestCapStop(self.budget.max_requests) from error
-                raise
+                # A bounded code from this decision's own requests; the provider's text is not kept.
+                raise DecisionFailed(classify(error, self.budget.attempts[first:])) from None
             # The SDK reports missing usage as 0; keep it unknown if any request for this decision lacked it.
             for key in USAGE:
                 if any(row[key] is None for row in self.budget.attempts[first:]):
