@@ -1,0 +1,15 @@
+# M2 correction fixture: a hot replica as in case A, plus a degraded reference-db link that clears at tick 17.
+# Gateway latency falls when the link clears, before the scripted restart.
+id: shift-r
+title: Gateway latency starts to fall before an approved restart
+seed: 11
+date: "2026-11-07"
+start_time: "10:05"
+warmup_ticks: 15
+incident: {id: INC-4400, summary: "The order gateway is slow.", alert: latency_high/order-gateway}
+tickets:
+  - {at: 14, key: MRX-4400, component: order-gateway, summary: "INC-4400: slow order acknowledgements"}
+faults:
+  - {type: resource, at: 2, instance: order-gateway-2, resource: memory, start_value: 93, rate: 0.05}
+  - {type: link, at: 2, until: 17, source: order-gateway, target: reference-db, mode: degraded, extra_latency_ms: 185}
+approver: {approve_roles: [on-call]}
