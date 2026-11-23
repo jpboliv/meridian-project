@@ -80,7 +80,7 @@ p { margin: 0 0 .8em; }
   font-size: .78rem; font-weight: 700; padding: .22em .7em; border-radius: 999px;
   border: 1.5px solid currentColor; white-space: nowrap;
 }
-.tag-ref { color: var(--exec); background: var(--exec-bg); }
+.tag-ref { color: var(--exec); background: var(--exec-bg); white-space: normal; max-width: 100%; }
 .tag-measured { color: var(--good); }
 .tag-offline { color: var(--muted); }
 .tag-online { color: var(--muted); font-weight: 600; font-size: .7rem; padding: .05em .5em; margin-left: .3em; vertical-align: middle; }
@@ -216,7 +216,6 @@ kbd { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85em; b
 .js [data-show].is-off { opacity: 0; visibility: hidden; }
 .js [data-show] { transition: opacity .45s ease, visibility .45s; }
 .js [data-show].is-new:not(svg *) { animation: pop .6s ease; }
-.js .lesson.is-corrected .struck-target { text-decoration-line: line-through; text-decoration-thickness: 2px; text-decoration-color: var(--bad); }
 .js ol.steps > li { margin: 0; }
 .js ol.steps .when { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .nojs-only { display: block; }
@@ -389,7 +388,7 @@ footer { padding: 26px 0 50px; color: var(--muted); font-size: .86rem; }
           <div class="lane-body" id="agent-body">
             <div class="lesson" id="lesson" data-show="0">
               <span class="k">Lição guardada pelo turno anterior</span>
-              <q>Reiniciar o gateway <span class="struck-target">resolveu o atraso</span>.</q>
+              <q>Reiniciar o gateway resolveu o atraso.</q>
               <div><span class="stamp" data-show="7">Corrigida: não é uma solução comprovada</span></div>
             </div>
             <div class="notes" id="agent-notes" aria-label="Observações reunidas pelo agente">
@@ -559,7 +558,7 @@ footer { padding: 26px 0 50px; color: var(--muted); font-size: .86rem; }
       </div>
     </div>
 
-    <p class="aside-note"><strong>Onde isto foi testado.</strong> Este caso de referência é o <a href="reference-incident.md#the-wrongly-credited-restart">teste de correção proposto</a>, com ficheiros de exemplo; não tem execução medida própria. A mesma regra corre no simulador, sem modelo, no caso R do M2, com outras horas: a latência caiu às 10:07, antes do reinício das 10:16. A afirmação «a latência só caiu depois do reinício» foi retirada; «o reinício resolveu o atraso» ficou assinalada como incerta, não retirada (<a href="experiments.md#2026-11-23-m2-scoped-handover-and-access">registo</a>). Os estudos com o modelo real estão na secção 4.</p>
+    <p class="aside-note"><strong>Onde isto foi testado.</strong> Este caso de referência é o <a href="reference-incident.md#the-wrongly-credited-restart">teste de correção proposto</a>, com ficheiros de exemplo; não tem execução medida própria. A mesma regra corre no simulador, sem modelo, no caso R do M2, com outras horas: a latência caiu às 10:07, antes do reinício das 10:16. A afirmação «a latência começou a cair depois do reinício» foi retirada; «o reinício resolveu o atraso» ficou assinalada como incerta, não retirada (<a href="experiments.md#2026-11-23-m2-scoped-handover-and-access">registo</a>). Os estudos com o modelo real estão na secção 4.</p>
   </div>
 </section>
 
@@ -741,7 +740,7 @@ footer { padding: 26px 0 50px; color: var(--muted); font-size: .86rem; }
   <div class="wrap">
     <header>
       <h2 id="fontes-t">Arquivo e fontes</h2>
-      <p class="lede">As ligações locais abrem ficheiros deste repositório e funcionam a partir de um clone ou do pacote de revisão. As marcadas <span class="tag tag-online">online</span> precisam de rede e de acesso ao repositório privado.</p>
+      <p class="lede">Pode abrir a apresentação só com este ficheiro HTML. Para consultar as fontes locais, abra-o na pasta <code>docs/</code> do projeto num clone da versão M2 ou posterior. O ZIP do M1 não inclui esta página nem as fontes do M2. As ligações marcadas <span class="tag tag-online">online</span> precisam de rede e de acesso ao repositório privado.</p>
     </header>
     <ul class="sources">
       <li><a href="../first_line/public-results-m2-2026-11-23/reminder-ledger.jsonl">Arquivo #17: protocolo, inícios e resultados das 12 execuções</a><span class="hash">SHA-256 2b453c7470da862f48a654f9973d0e34dd640468772cdef60a0def22bd3a0aac</span></li>
