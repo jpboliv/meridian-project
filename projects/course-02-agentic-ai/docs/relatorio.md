@@ -7,9 +7,10 @@ Projeto Agentic AI · o primeiro marco foi aceite e está identificado pela [tag
 ## Em resumo
 
 - **Problema e utilizador.** Um alerta diz «o gateway de ordens está lento». O engenheiro de serviço (on-call) da Meridian, uma bolsa simulada, precisa de saber o que aconteceu, se deve agir e se o serviço recuperou. Reiniciar a instância errada, ou afirmar uma recuperação sem medir, é pior do que passar o caso ao operador com a evidência certa.
-- **Estado.** O M1 está implementado: um agente trata um alerta até à recuperação medida ou a uma passagem ao operador. O M2 (memória entre turnos) e o M3 (especialistas e retoma) estão planeados.
+- **Estado.** O M1 está implementado. No M2, o turno seguinte recebe pistas com fonte e só as usa quando as leituras atuais o justificam. As duas [comparações do M2](experiments.md#2026-11-23-live-m2-results) terminaram. O M3 (especialistas e retoma) continua planeado.
 - **Resultado.** Na versão marcada, `gateway-m1.7`, passaram 119 testes offline e os cinco casos públicos com decisões programadas. Os registos dos cinco casos foram reproduzidos byte a byte. Na linha de base arquivada, `gateway-m1.6`, passaram 9 de 15 execuções com o modelo real. Os quatro reinícios foram todos aprovados pelo aprovador on-call simulado e feitos na instância certa, e não houve outros efeitos.
 - **Verificação.** Este percurso foi [verificado num clone limpo](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7100207276), sem `.env` nem chave.
+- **Resultado do M2.** Nas 12 execuções com e sem lembrete, passaram todos os casos. Em C, o modelo fez as mesmas seis leituras, pela mesma ordem, nas duas versões. Em D, a condição do lembrete não se verificou. Mantemos o runbook sem lembrete por defeito. Nas 45 execuções da comparação de cache também passaram todos os casos; o fornecedor registou zero leituras e zero escritas na cache. O custo estimado das duas experiências foi de 0,019345 USD.
 
 ## Pergunta e proposta
 
@@ -44,7 +45,7 @@ flowchart LR
     esperado["Resultado esperado, que o agente não vê"]
     veredito["Passou ou falhou"]
   end
-  subgraph FUT["Planeado"]
+  subgraph FUT["Marcos seguintes ao M1"]
     m2["M2: memória entre turnos"]
     m3["M3: líder, especialistas e retoma"]
   end
@@ -83,7 +84,7 @@ As seis falhas pararam sem efeitos, mas uma paragem controlada e incompleta pode
 - as de D3 só passam porque o teste fornece um alvo reparado válido;
 - as de A2 continuam a falhar (passaram 7 de 12 verificações).
 
-Em A3 ([execução 11](../first_line/live-baseline-m1.6-2026-11-22.jsonl#L11)), a quarta resposta reportou 512 tokens de saída, o limite por pedido. Isso não prova que a resposta tenha sido cortada, e a causa final da falha continua desconhecida. Nada disto é um resultado do modelo; `gateway-m1.7` ainda não correu com o modelo real.
+Em A3 ([execução 11](../first_line/live-baseline-m1.6-2026-11-22.jsonl#L11)), a quarta resposta reportou 512 tokens de saída, o limite por pedido. Isso não prova que a resposta tenha sido cortada, e a causa final da falha continua desconhecida. Estes testes repetiram decisões gravadas. As comparações posteriores com o modelo real estão no [registo do M2](experiments.md#2026-11-23-live-m2-results).
 
 ## Concluído e planeado
 
@@ -91,9 +92,8 @@ Em A3 ([execução 11](../first_line/live-baseline-m1.6-2026-11-22.jsonl#L11)), 
 
 **Ainda não demonstrado.**
 
-- `gateway-m1.7` com o modelo real.
-- Reutilização de contexto ([#21](https://github.com/jpboliv/meridian-project/issues/21)): os braços estão [preparados](experiments.md#context-reuse-arms-prepared-offline), mas não houve nenhuma comparação real emparelhada. Cada pedido da linha de base ficou abaixo dos 1024 tokens que a cache exige. Não afirmamos ganhos de cache nem de memória.
-- M2: memória entre turnos, com correção (o [reinício creditado erradamente](reference-incident.md#the-wrongly-credited-restart)) e acesso com âmbito definido.
+- Benefício da cache em incidentes com pedidos mais longos: na [comparação #21](https://github.com/jpboliv/meridian-project/issues/21), nenhum dos 157 pedidos chegou aos 1024 tokens de entrada necessários. O custo variou mesmo sem reutilização.
+- Benefício geral da memória: o lembrete não poupou leituras nos três pares de C. A correção do [reinício creditado erradamente](reference-incident.md#the-wrongly-credited-restart) foi verificada separadamente, sem modelo.
 - M3: um líder que integra dois especialistas e um trabalhador persistente que retoma sem repetir o reinício.
 - Limites: as horas das amostras não têm data, por isso a regra de E só compara amostras do mesmo dia simulado. Os casos reservados não foram executados.
 
@@ -203,7 +203,7 @@ Cada linha do ficheiro é uma execução. Para ver o que aconteceu numa delas, c
 
 ## Utilização de IA
 
-Assistentes de IA, incluindo o Claude Code, ajudaram a escrever o código, os testes e estes documentos. As revisões independentes de código foram feitas por sessões de IA novas, separadas das que escreveram as alterações. O dono do projeto decide as especificações, as execuções reais e os gastos. Só os dois pilotos do caso B e as 15 execuções da linha de base usaram o `gpt-6-luna`. Fora do agente, a 18 de novembro, cinco execuções só de leitura usaram o `claude-opus-5-5` sobre ficheiros de exemplo, sem o simulador: uma num [estudo](experiments.md#2026-11-18-shortened-restart-handover) e quatro [noutro](experiments.md#2026-11-18-does-the-memory-lesson-change-the-investigation).
+Assistentes de IA, incluindo o Claude Code e o Codex, ajudaram a escrever o código, os testes e estes documentos. As revisões independentes de código foram feitas por sessões de IA novas, separadas das que escreveram as alterações. O dono do projeto decide as especificações, as execuções reais e os gastos. Usámos `gpt-6-luna` nos dois pilotos do caso B, nas 15 execuções da linha de base e nas 57 execuções do M2. Fora do agente, a 18 de novembro, cinco execuções só de leitura usaram o `claude-opus-5-5` sobre ficheiros de exemplo, sem o simulador: uma num [estudo](experiments.md#2026-11-18-shortened-restart-handover) e quatro [noutro](experiments.md#2026-11-18-does-the-memory-lesson-change-the-investigation).
 
 ## Fontes
 

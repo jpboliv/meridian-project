@@ -9,6 +9,8 @@ It grows in three milestones:
 2. Production On-Call Agent (sessions 4–6)
 3. 24/7 Incident Response Center (sessions 7–9)
 
+**Latest evidence:** the [M2 live results and offline reproduction commands](docs/experiments.md#2026-11-23-live-m2-results) cover 12 paired-study slots on handover reminders and 45 on provider caching. The reminder did not save investigative reads. No cache hits or writes were reported in the timestamp/cache study. The M1 walkthrough below remains usable without a provider key.
+
 Start with the [project goals](docs/project.md) and [reference incident](docs/reference-incident.md). Follow the [roadmap](../../ROADMAP.md) for milestone outcomes.
 
 For the class presentation, use [the short report in Portuguese](docs/relatorio.md): the context-reuse question, course versus project work, the architecture, one evidence table with the `gateway-m1.7` scripted traces and the [15-run public live baseline](docs/experiments.md#2026-11-22-public-m1-baseline-gateway-m16) (9/15 passed), and what remains unmeasured. The current harness is `gateway-m1.7`, an [offline follow-up](docs/experiments.md#2026-11-23-offline-follow-up-to-the-baseline-failures-gateway-m17) to those failures with no live result yet. Its scripted outcomes match m1.6. The report ends with a [verification route](docs/relatorio.md#verificar-no-seu-computador) that needs no `.env` or API key: run the lab, regenerate the scripted traces and compare them byte for byte, and analyse the saved live baseline.

@@ -1,6 +1,10 @@
 # Current focus
 
-Combined #15 and #17 verification for [PR #37](https://github.com/jpboliv/meridian-project/pull/37): 254 offline tests passed in a clean, network-isolated archive. The study, M2 and five M1 traces reproduced byte for byte. The next gate is independent review of the combined changes. No live study has run.
+Both [M2 live studies](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-live-m2-results) finished: 12/12 reminder slots and 45/45 caching slots passed. Keep the runbook alone: same six reads in every exposed pair. The timestamp/cache study saw zero cache reads and writes. Combined estimated cost USD 0.019344775; no replacement or reserved runs. The one-time authorizations are consumed. [PR #38](https://github.com/jpboliv/meridian-project/pull/38) holds the evidence for release review; the M2 tag awaits owner acceptance.
+
+23 November: the owner [approved the #17 and #21 public live studies](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7114140964) on the reviewed code at `85ed8d0`. #17 ran first, then #21. Separate monitored allowances were USD 0.15 and USD 0.50.
+
+[PR #37 merged](https://github.com/jpboliv/meridian-project/pull/37) at `85ed8d0`. The [final independent review](https://github.com/jpboliv/meridian-project/pull/37#issuecomment-7113966576) approved `77541bf` with no High or Medium findings and reproduced 254 offline tests and the study, M2 and five M1 traces. The M2 memory and access implementation issues (#14 and #15) are closed.
 
 [#15 dispatch classification](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-m2-dispatch-classification) is ready for review. After the three diagnostic reads, the dispatch gate verifies the exact current noncritical gateway through trusted authorization metadata. Public A still restarts at tick 26. Missing, reclassified, mismatched and unverifiable targets produce no effect. The lookup uses no ticks and the five-tick grant is unchanged. All 248 offline tests passed. The five M1 traces match byte for byte. M2 adds classification metadata and the study records the new harness fingerprint. The historical M2 and study traces reproduce at `74e2677`.
 

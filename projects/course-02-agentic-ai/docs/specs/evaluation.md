@@ -67,6 +67,11 @@ Before starting, recheck rates, input assumptions for all cases, billing visibil
 
 ## Draft: fair comparisons
 
+**Agreed for the two public M2 studies only (23 November).** Use the [owner-approved settings, allowances and stop rules](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7114140964) on `85ed8d0`. Both studies use `gpt-6-luna`, standard Responses, temperature unset, six requests per slot and 512 output tokens per request. No application cache, no replacement slots, and no held-out material. Keep the #17 and #21 allowances separate.
+
+- **#17:** run the frozen 12-slot C/D plan. Count only comparable pairs in which an eligible reminder actually reached the decision. D without exposure is a variance and isolation control. Reject a reminder on an adoption blocker. Otherwise prefer more verified passes, or fewer reads or tokens at equal success in at least two exposed pairs. On a tie or mixed evidence, keep the runbook alone. Tokens measure effort, not dollars. The frozen runner's `Draft` label predates this decision.
+- **#21:** run A–E in three rounds, with three arms per case. Within each case rotate the starting arm by round; also rotate it by case within a round. Use the automatic timestamp-last arm as the shared control. Compare provider-reported cache reads and writes, whole-incident cost, verified passes and effects. All 45 slots are fresh.
+
 For new independent studies, default to `gpt-4.1-mini`, pin an available revision and use temperature zero where supported. The specific [#21 Luna protocol](../experiments.md#context-reuse-arms-prepared-offline) takes precedence over these defaults and uses unset temperature. For M2 and #21, collect fresh matched controls and counterbalance arm order. Use the same model and parameters within each comparison except for the planned treatment. Record configured and returned model IDs, any available revision, and the simulator seed.
 
 Use three paired repetitions per case and version for new independent studies. In each pair, match start time, identity, approvals, simulator state and limits. Reset the simulator, memory, cache and work records between independent trials. Within a three-shift trial, preserve only the allowed lessons across the prescribed sequence. Charge all memory writes and corrections to their trial.
