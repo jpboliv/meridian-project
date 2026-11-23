@@ -1,3 +1,13 @@
+# 2026-11-23 M2 dispatch classification
+
+[Issue #15 owner direction](https://github.com/jpboliv/meridian-project/issues/15#issuecomment-7107223366) and the [agreed access contract](specs/permissions.md) require the exact affected noncritical gateway instance to remain authorized at dispatch. After the three traced diagnostic reads, the executor gate checks action, instance, component and criticality through `meridian.security.describe_action`. The access decision records the classification separately from the diagnostic reads. A missing, critical, mismatched or unverifiable target prevents the effect. The lookup advances no ticks, and the five-tick grant still expires at the same tick.
+
+Public A grants at tick 22, reads at ticks 23–25 and restarts once at tick 26, before expiry at 27. The scoped tests change the classification during those reads or remove the target after the final read. Both deny dispatch without an effect even though the earlier deployment read classified the gateway as noncritical. Additional tests cover lookup failure, missing criticality, a mismatched instance and a mismatched component.
+
+Before editing, public A loaded inside bubblewrap from a writable tracked-only archive of `74e2677` with the two recovered source and test files. The actual host home, both evaluator stores and their manifests, and `.env` were inaccessible. The network namespace had only loopback and an external connection returned network unreachable. The course environment was mounted read-only at `/venv`.
+
+All 248 offline tests passed. The [replay commands below](#reproduce) match the checked-in traces. The five M1 traces match byte for byte. Five of the 14 M2 records gain only access classification metadata. The 17-row study trace changes only the `scoped_access.py` fingerprint in the 12 scripted slots. Decisions, outcomes and tool counts match the base. To reproduce the historical M2 and study traces, run those commands from a tracked archive of `74e2677` with the same offline environment. Both matched their archived files byte for byte.
+
 # 2026-11-23 M2 handover comparison, prepared offline
 
 [#17](https://github.com/jpboliv/meridian-project/issues/17). Question: when both versions get the full v2 runbook, does a sourced reminder from an earlier shift change the reads needed for a verified decision? This entry prepares that comparison and records its offline controls. No model was called, and no live run, key or spending was used. Live settings and spending need separate owner decisions.
@@ -121,7 +131,7 @@ uv run --locked python "$STUDY" --summarize "$RUN_DIR/ledger.jsonl"
 | #15 identity, approvals, injected text, denials, isolation | Integrated. |
 | #15 handover gap from the PR #36 review | **Fixed.** The dispatch-time metrics read can fail while exactly one link reads faulty. The handover now names both the missing metrics and the faulty link with its tick, and the earlier samples are marked `superseded` instead of `current`. Test: `test_failed_dispatch_metrics_and_one_faulty_link_are_reported_together`. It fails on the previous code. |
 | #15 personal data | Ticket text is reduced to its key, time and incident before any use. A new test puts a synthetic email address and phone number in a ticket. Neither reaches the decision context, the tool trace, memory or the report. Other M2 tools return no free text, so further masking has no M2 source to act on. |
-| #15 critical flag re-read at dispatch | **Blocked.** Every tool call advances one tick. The grant is at tick 22, the three dispatch reads at 23–25 and dispatch at 26; the grant expires at 27 under the agreed five-tick window. A fourth read would expire every grant in A and C. Options: a combined deployment and metrics read in the simulator tool, or an owner decision on the window. Scope still uses this shift's traced deployment record (tick 16). |
+| #15 current classification at dispatch | **Fixed.** The trusted security adapter resolves the exact target after the three diagnostic reads, with no additional tick. See [the follow-up](#2026-11-23-m2-dispatch-classification). |
 | #15 rollback | Deferred by the contract. |
 
 ## Reproduce
