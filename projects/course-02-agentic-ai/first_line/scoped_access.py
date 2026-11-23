@@ -1,12 +1,14 @@
 """Authenticated run scope and simulator restart authorization for M2.
 
 Access decisions use the authenticated principals, the approval ledger, the simulated clock and traced tool
-results from this shift. They never read the simulator's hidden world state.
+results from this shift. At the effect boundary, the course security adapter provides current
+target classification as authorization metadata, separate from diagnostic evidence.
 """
 
 import re
 from dataclasses import dataclass, field
 
+from meridian.security import describe_action
 from shift import GATEWAY
 
 RESTART = "restart_instance"
@@ -86,10 +88,32 @@ class Access:
             return "approver_not_allowed"
         return None
 
+    def classification_problem(self, shift, target, record):
+        """The target must still exist, be the exact gateway instance and be noncritical now. Asks the course
+        security adapter, which does not advance the clock; anything it cannot confirm fails closed."""
+        classification = {"source": "security.describe_action", "component": None, "critical": None}
+        record["classification"] = classification
+        try:
+            request = describe_action(shift.deps, RESTART, target)
+            action, resolved_target = request.action, request.target
+            component, critical = request.component, request.critical
+        except Exception:
+            # A failed lookup cannot authorize an effect.
+            return "target_unverified"
+        if (action, resolved_target) != (RESTART, target) or component is None or type(critical) is not bool:
+            return "target_unverified"
+        classification["critical"] = critical
+        if component != GATEWAY:
+            return "target_mismatch"
+        classification["component"] = GATEWAY
+        if critical:
+            return "target_critical"
+        return None
+
     def check_dispatch(self, shift, target, key, ref):
         """The effect boundary. Rights and the grant are checked, then fresh traced readings and links are taken,
-        then rights and the grant are checked again at the tick the executor would act. Spends the grant only on
-        dispatch."""
+        then the target's current classification, rights and the grant are checked again at the tick the executor
+        would act. Spends the grant only on dispatch."""
         record = {"tick": shift.deps.sim.state.tick, "target": target, "approval": ref}
         if not self.allowed_target(shift, target) or not self.permits(shift, READ):
             decision, reason = "permission_denied", "rights_or_scope"
@@ -99,7 +123,9 @@ class Access:
             evidence = shift.dispatch_evidence(target)
             problem = evidence.pop("problem")
             record["evidence"] = evidence
-            if problem:
+            if classified := self.classification_problem(shift, target, record):
+                decision, reason = "permission_denied", classified
+            elif problem:
                 decision, reason = "refresh_evidence", problem
             elif not self.allowed_target(shift, target) or not self.permits(shift, READ):
                 decision, reason = "permission_denied", "rights_changed_during_reads"

@@ -300,6 +300,9 @@ def test_dispatch_uses_fresh_traced_reads_after_the_grant():
                                              f"check_link/reference-db/{between[1].tick}",
                                              f"check_link/matching-engine/{between[2].tick}"]
     assert record["evidence"]["hot_running"] == ["order-gateway-2"]
+    # The classification is checked at the dispatch tick without a tool call and kept apart from the evidence.
+    assert record["classification"] == {"source": "security.describe_action", "component": GATEWAY,
+                                        "critical": False}
     assert dispatch.tick < grant.tick + scoped_access.GRANT_TICKS
 
 
@@ -448,6 +451,57 @@ def test_rights_revoked_during_dispatch_reads():
     record = shift.access.decisions[-1]
     assert (record["decision"], record["reason"]) == ("permission_denied", "rights_changed_during_reads")
     assert record["evidence"]["sources"] and not shift.deps.sim.executor.effects()
+
+
+@pytest.mark.parametrize("change,reason", [("critical", "target_critical"), ("removed", "target_unverified")])
+def test_target_classification_changed_during_dispatch_reads(change, reason):
+    shift = build_shift("A", ScopedMemory())
+    component, instance = shift.deps.sim.state.instance("order-gateway-2")
+    if change == "critical":
+        interrupt_reads(shift, lambda: setattr(component, "critical", True))
+    else:  # gone after the last dispatch read; the simulator's fault still names it on later ticks
+        check_link = shift.tools.check_link
+
+        def last_read(source, target):
+            result = check_link(source, target)
+            if shift.access.grants and target == "matching-engine":
+                component.instances.remove(instance)
+            return result
+
+        shift.tools.check_link = last_read
+    run(shift)
+    record = shift.access.decisions[-1]
+    assert (record["decision"], record["reason"]) == ("permission_denied", reason)
+    assert record["evidence"]["sources"] and "classification" in record
+    assert shift.deployment["critical"] is False  # the earlier traced record alone would have allowed it
+    assert not shift.deps.sim.executor.effects()
+
+
+@pytest.mark.parametrize("problem,reason", [
+    ("lookup_failed", "target_unverified"),
+    ("unknown_criticality", "target_unverified"),
+    ("wrong_instance", "target_unverified"),
+    ("wrong_component", "target_mismatch"),
+])
+def test_unverifiable_dispatch_classification_fails_closed(monkeypatch, problem, reason):
+    describe_action = scoped_access.describe_action
+
+    def describe(deps, action, target):
+        if problem == "lookup_failed":
+            raise RuntimeError("authorization lookup failed")
+        request = describe_action(deps, action, target)
+        changes = {"unknown_criticality": {"critical": None},
+                   "wrong_instance": {"target": "order-gateway-1"},
+                   "wrong_component": {"component": "matching-engine"}}
+        return replace(request, **changes[problem])
+
+    monkeypatch.setattr(scoped_access, "describe_action", describe)
+    shift = build_shift("A", ScopedMemory())
+    run(shift)
+    record = shift.access.decisions[-1]
+    assert (record["decision"], record["reason"]) == ("permission_denied", reason)
+    assert len(record["evidence"]["sources"]) == 3
+    assert not shift.access.spent and not shift.deps.sim.executor.effects()
 
 
 def test_grant_expiring_while_reading_blocks_dispatch():
