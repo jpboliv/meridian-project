@@ -4,7 +4,9 @@
 
 **Is this necessary?** The supplied executor's `status` returns `unknown_key` for a key it never saw and also for a rejected request. It also has no notion of a request in flight. The contract's table needs those cases told apart, so a small ledger records every keyed request beside the executor. The checkpoint is one JSON file. No simulator or M1/M2 file changes. The code is [`team/resume.py`](../team/resume.py) and the runs are in [`team/resume_demo.py`](../team/resume_demo.py).
 
-**Isolation.** Same environment as the [#18 entry](#2026-11-23-m3-specialist-handoffs-offline), checked from inside before any development. It was checked again before this slice: no host home, reservation, manifest, `.env` or `runs/`, no credential variables, no network, and public A loaded.
+**Isolation.** The initial implementer edited the isolated tracked archive via host-side file tools; tests ran inside bubblewrap. For the review fix at `ecd5925`, the implementer first loaded public A inside the supplied `inside` wrapper and verified that the host home, both evaluator stores, their manifests and `.env` were absent and only loopback was present. All fix edits, test runs and trace generation used that wrapper in `/work`, with the project environment mounted read-only at `/venv`.
+
+**PR #41 review fix.** The same-label regression failed at `ecd5925`: the replacement reassessed an absent key in an independent empty ledger. Each ledger now generates its own opaque instance ID. The atomic intent saves that ID; resume compares it before reading the key. The trace shows the display labels and whether the IDs match, never the IDs themselves.
 
 ## Design
 
@@ -36,7 +38,7 @@ The current read right is checked before the lookup. Without it, the replacement
 | Executor rejected the request | `rejected` | Stops the write, asks for a decision | 0 |
 | Checkpoint edited to another target | bound to `order-gateway-2` | Key conflict: stops | 1 (the original) |
 | Ledger unavailable | error | Unknown, hands over, no recovery claim | 1 (the original) |
-| Whole simulator restarted | `absent` in `shift-a/ledger-2` | Not trusted: the intent went to `shift-a/ledger-1`. Unknown, no dispatch in the new simulator. The original simulator had one restart; that evidence is gone | 0 in the new simulator |
+| Whole simulator restarted | Empty ledger, same `shift-a/ledger-1` label | Instance mismatch; the replacement does not consult the key. Unknown, no dispatch in the new simulator. The original simulator had one restart; that evidence is gone | 0 in the new simulator |
 | Read right revoked before resume | not read | Records the access gap and hands over. No read, no recovery inferred | 1 (the original) |
 | Checkpoint torn | not read | Unknown. Nothing read or sent | 0 |
 | Link degrades after the restart (fixture N) | `completed` | Reconciles ACT-001. Six fresh reads end at 190 ms (ticks 32–34), so it reports no recovery and asks for healthy readings. A worker that trusted the old receipt would have claimed recovery | 1 |
@@ -46,13 +48,14 @@ Fixture N ([`team/cases-m3/shift-n.yaml`](../team/cases-m3/shift-n.yaml)) is pub
 
 ## Controls
 
-[`team/test_team_resume.py`](../team/test_team_resume.py) has 12 tests:
+[`team/test_team_resume.py`](../team/test_team_resume.py) has 13 tests:
 
 - A failed rename keeps the previous complete checkpoint. Torn and foreign files are unreadable.
 - `WorkerStopped` is not an `Exception`.
 - Each ledger state: a duplicate keeps the original receipt, and a rebound key conflicts with no effect.
 - The intent is saved before the ledger or executor sees anything, with every agreed field.
 - The replacement starts with its own trace and the budget left at the intent.
+- An independent empty ledger with the original label cannot authorize a resend after an effect.
 - A replacement refuses another target or key.
 - An absent intent with the restart right revoked, or with the on-call now declining, leads to no dispatch.
 - A replacement budget too small for the reassessment hands over with no dispatch.
@@ -75,14 +78,14 @@ PYTHONPATH=../../.. python m2_demo.py | cmp - offline-traces-m2.jsonl
 PYTHONPATH=../../.. python demo.py | cmp - offline-traces-m1.7.jsonl
 ```
 
-Results in the isolated environment: 295 tests passed (259 before M3, 24 handoff and 12 resume tests added). The M3 trace reproduced, and the study, M2 and five M1 (`gateway-m1.7`) traces matched byte for byte. The saved M2 live ledger still summarizes with no invalid, interrupted, unrun or rejected slots.
+Results in the isolated environment: 296 tests passed (259 before M3, 24 handoff and 13 resume tests added). The M3 trace reproduced, and the study, M2 and five M1 (`gateway-m1.7`) traces matched byte for byte. The saved M2 live ledger still summarizes with no invalid, interrupted, unrun or rejected slots.
 
 ## Limits and open questions
 
 - **Stop mechanism.** The worker is stopped in-process by an exception at the agreed point, not by killing an operating-system process. The checkpoint is on disk; the ledger and the executor's receipts are in the simulation process's memory, as in the contract's demonstration.
 - **Injected faults.** The in-flight, rejected and unavailable ledger states are injected control faults, and the conflict control edits the checkpoint by hand. One worker runs at a time: there are no leases or concurrent workers.
 - **One key per target.** The key is the M2 per-incident restart key. A second, separately approved restart of the same instance in the same incident would be deduplicated by the executor. That is outside this demonstration.
-- **Open question: is a grant restored when its window is still open?** The replacement never restores a grant. In the absent run it asks the on-call again (APR-002), although APR-001's window ran to tick 28 and the lookup happened at tick 27. The three fresh dispatch reads would have outlasted that window in any case. The owner may prefer that the replacement hand over instead of asking the on-call again.
+- **Current approval.** The replacement never restores a grant. In the absent run it asks the on-call again (APR-002), although APR-001's window ran to tick 28 and the lookup happened at tick 27. The three fresh dispatch reads would have outlasted that window in any case.
 - **Scripted.** No model chose anything, and the 32-call budget is a harness choice for this evidence, not an owner-agreed limit.
 
 # 2026-11-23 M3 specialist handoffs, offline
@@ -91,7 +94,7 @@ Results in the isolated environment: 295 tests passed (259 before M3, 24 handoff
 
 **Is this necessary?** The contract asks for distinct specialists, validated handoffs, one bounded follow-up, and a comparison with the single agent under the same budget. The team reuses the M2 scoped shift for identity, scope, approval, dispatch evidence, receipt and recovery. It adds one module ([`team/handoff.py`](../team/handoff.py)), one fixture and no simulator change. It lives in `team/`, so the M1 and M2 code, their traces and the #17 study fingerprint (which hashes `first_line/` and `meridian/`) stay unchanged.
 
-**Isolation.** Checked from inside the development environment before any development. Bubblewrap held a writable archive of the tracked files at `ca81c6b`, the system runtime, and the repository `.venv` read-only at `/venv`. It had no host home, no credential variables and no network: loopback only, and an external connection returned "network unreachable". Public A loaded through `load_scenario`. Absent: `/home`, the owner's home, both reservation locations (`~/.local/share/meridian-evaluator/course-02/m1-reservation/` and the old in-checkout `private/m1-reservation/`), their `SHA256SUMS` manifests, `.env`, `private/` and `runs/`. A filesystem search found no reservation, manifest or `.env` name. All development and tests ran there. Only the intended files were copied back. No held-out material was opened.
+**Isolation.** Checked from inside the development environment before any development. Bubblewrap held a writable archive of the tracked files at `ca81c6b`, the system runtime, and the repository `.venv` read-only at `/venv`. It had no host home, no credential variables and no network: loopback only, and an external connection returned "network unreachable". Public A loaded through `load_scenario`. Absent: `/home`, the owner's home, both reservation locations (`~/.local/share/meridian-evaluator/course-02/m1-reservation/` and the old in-checkout `private/m1-reservation/`), their `SHA256SUMS` manifests, `.env`, `private/` and `runs/`. A filesystem search found no reservation, manifest or `.env` name. The initial implementer edited that archive via host-side file tools and executed tests inside bubblewrap. Only the intended files were copied back. No held-out material was opened.
 
 ## Design
 

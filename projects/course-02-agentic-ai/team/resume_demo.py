@@ -85,7 +85,7 @@ async def resume_runs():
         saved = store.load()
         records.append(resume_record("intent saved, never dispatched", "A", stopped, worker, report, sim, {
             "authoritative absence": report["resume"]["ledger"]["state"] == "absent"
-            and report["resume"]["ledger"]["epoch"] == before["ledger_epoch"],
+            and report["resume"]["ledger"]["same_instance"],
             "original grant not restored; a new on-call grant": report["resume"]["original_approval"]["restored"] is False
             and saved["approval"] != before["approval"] and saved["key"] == before["key"],
             "need re-read before dispatch": [row["decision"] for row in worker.access.decisions] == ["dispatch"],
@@ -129,10 +129,12 @@ async def resume_runs():
     with tempfile.TemporaryDirectory() as folder:
         sim, ledger, store, memory, stopped = await interrupted("A", folder, "after_dispatch_before_receipt")
         restarted = start_exchange(CASES["A"])  # the whole simulator restarted: executor, world and ledger are new
-        ExecutorLedger(restarted, f"{restarted.scenario.scenario_id}/ledger-2")
+        fresh = ExecutorLedger(restarted, ledger.label)
         worker, report = await replacement(restarted, store, ScopedMemory())
         records.append(resume_record("whole simulator restarted", "A", stopped, worker, report, restarted, {
-            "absence not trusted from another ledger": report["resume"]["ledger"]["state"] == "absent"
+            "empty ledger with the original label": fresh.label == store.load()["ledger_label"]
+            and not fresh.entries and effects(sim) == 1,
+            "different instance not trusted": not report["resume"]["ledger"]["same_instance"]
             and report["resume"]["outcome"] == "unknown",
             "no dispatch in the new simulator": effects(restarted) == 0
             and all(row["tool"] != "restart_instance" for row in reads(worker))},

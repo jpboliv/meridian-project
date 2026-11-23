@@ -84,7 +84,8 @@ def test_intent_is_durable_before_the_executor_can_act(tmp_path):
     assert record["caller"] == {"requester": "requester-1", "credential": "gateway-tool-1", "approver": APPROVER.id}
     assert record["evidence"] == ["metrics/order-gateway/24", "check_link/reference-db/25",
                                   "check_link/matching-engine/26"]
-    assert record["remaining_budget"] == SHIFT_CALLS - 12 and record["ledger_epoch"] == "shift-a/ledger-1"
+    assert record["remaining_budget"] == SHIFT_CALLS - 12
+    assert record["ledger_id"] == ledger.instance_id and record["ledger_label"] == ledger.label
 
 
 def test_stopped_worker_leaves_no_receipt_and_the_replacement_starts_cold(tmp_path):
@@ -95,6 +96,19 @@ def test_stopped_worker_leaves_no_receipt_and_the_replacement_starts_cold(tmp_pa
     assert report["action"]["receipt"] == "ACT-001" and report["action"]["reconciled_by"] == "worker-2"
     assert store.load()["receipt"]["action_id"] == "ACT-001" and len(sim.executor.effects()) == 1
     assert report["team"]["budget"]["limit"] == SHIFT_CALLS - 12 - 1  # remaining at intent, dispatch reserved
+
+
+def test_same_label_empty_ledger_cannot_authorize_resend(tmp_path):
+    sim, original, store, _, stopped = run(interrupted("A", tmp_path, "after_dispatch_before_receipt"))
+    intent = store.load()
+    assert stopped["effects_at_stop"] == 1 and intent["receipt"] is None
+    restarted = start_exchange(CASES["A"])
+    fresh = ExecutorLedger(restarted, original.label)
+    assert fresh.lookup(intent["key"])["state"] == "absent"
+    worker, report = run(replacement(restarted, store, ScopedMemory()))
+    assert report["resume"]["outcome"] == "unknown"
+    assert [call.tool for call in worker.tools.trace] == ["executor.lookup"]
+    assert restarted.executor.audit == [] and len(sim.executor.effects()) == 1 and store.load() == intent
 
 
 def test_replacement_never_sends_another_key_or_target(tmp_path):

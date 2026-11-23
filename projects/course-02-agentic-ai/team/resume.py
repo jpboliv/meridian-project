@@ -11,6 +11,7 @@ ledger, and current access. It reconciles the original key against the ledger an
 import json
 import os
 from pathlib import Path
+from uuid import uuid4
 
 from pydantic import ValidationError
 
@@ -23,7 +24,7 @@ from shift import GATEWAY, GatewayHealth
 DISPATCH_RESERVED = 1  # the dispatch call is charged to the budget whether or not it was sent
 STOP_POINTS = ("after_intent_before_dispatch", "after_dispatch_before_receipt")
 CHECKPOINT_FIELDS = ("version", "incident", "shift", "step", "worker", "caller", "target", "action", "parameters",
-                     "key", "approval", "evidence", "remaining_budget", "ledger_epoch", "state", "receipt",
+                     "key", "approval", "evidence", "remaining_budget", "ledger_id", "ledger_label", "state", "receipt",
                      "saved_tick")
 
 
@@ -80,10 +81,11 @@ class ExecutorLedger:
     ledger never received the key, which also means nothing with that key is in flight. `hold` and `refuse` are
     control faults: leave the next request in flight, or have the executor refuse it."""
 
-    def __init__(self, sim, epoch):
+    def __init__(self, sim, label):
         self.executor = sim.executor
         self.sim = sim
-        self.epoch = epoch
+        self.label = label
+        self.instance_id = uuid4().hex
         self.entries = {}
         self.available = True
         self.hold = 0
@@ -132,8 +134,8 @@ class ExecutorLedger:
     def lookup(self, key):
         entry = self.entries.get(key)
         if entry is None:
-            return {"epoch": self.epoch, "idempotency_key": key, "state": "absent"}
-        return {"epoch": self.epoch, "idempotency_key": key, "state": entry["state"], "binding": entry["binding"],
+            return {"idempotency_key": key, "state": "absent"}
+        return {"idempotency_key": key, "state": entry["state"], "binding": entry["binding"],
                 "received_tick": entry["received_tick"], "requests": entry["requests"], "receipt": entry["receipt"]}
 
 
@@ -154,12 +156,14 @@ class DurableTools(TeamTools):
         shift.save_outcome(result)
         return result
 
-    def ledger_lookup(self, key):
+    def ledger_lookup(self, key, expected_id):
         def lookup():
             ledger = self.sim.executor
             if not isinstance(ledger, ExecutorLedger) or not ledger.available:
                 return {"error": "executor ledger unavailable"}
-            return ledger.lookup(key)
+            same_instance = ledger.instance_id == expected_id
+            source = {"label": ledger.label, "same_instance": same_instance}
+            return {**source, **ledger.lookup(key)} if same_instance else source
 
         return self._run("executor.lookup", {"idempotency_key": key}, lookup)
 
@@ -189,13 +193,14 @@ class DurableLead(TeamLead):
     def save_intent(self, target, key, ref):
         decision = self.access.decisions[-1]
         self.save({
-            "version": 1, "incident": self.brief["incident_id"], "shift": self.shift_id, "step": "restart_dispatch",
+            "version": 2, "incident": self.brief["incident_id"], "shift": self.shift_id, "step": "restart_dispatch",
             "worker": self.worker,
             "caller": {"requester": self.access.requester.id, "credential": self.access.credential.id,
                        "approver": self.access.approver.id},
             "target": target, "action": RESTART, "parameters": {"target": target}, "key": key, "approval": ref,
             "evidence": decision["evidence"]["sources"], "remaining_budget": self.budget.remaining(),
-            "ledger_epoch": self.deps.sim.executor.epoch, "state": "intent_saved", "receipt": None,
+            "ledger_id": self.deps.sim.executor.instance_id, "ledger_label": self.deps.sim.executor.label,
+            "state": "intent_saved", "receipt": None,
             "saved_tick": self.deps.sim.state.tick})
 
     def save_outcome(self, result):
@@ -240,7 +245,7 @@ class ReplacementLead(DurableLead):
             notes["checkpoint"] = "missing or unreadable"
             return self.unknown("No readable checkpoint.")
         notes["checkpoint"] = {key: record[key] for key in ("state", "worker", "target", "key", "approval",
-                                                            "remaining_budget", "ledger_epoch", "saved_tick")}
+                                                            "remaining_budget", "ledger_label", "saved_tick")}
         if (record["incident"], record["action"]) != (self.brief["incident_id"], RESTART):
             return self.unknown("The checkpoint names another incident or action.")
         self.resume_record = record
@@ -256,13 +261,12 @@ class ReplacementLead(DurableLead):
             return self.handover(f"Access no longer permits verifying restart key {record['key']}. Ask the gateway "
                                  f"team to read the executor record and current gateway health. No recovery is "
                                  f"inferred from an earlier receipt.")
-        found = self.tools.ledger_lookup(record["key"])
+        found = self.tools.ledger_lookup(record["key"], record["ledger_id"])
         notes["ledger"] = {key: value for key, value in found.items() if key != "receipt"}
         if "error" in found:
             return self.unknown("The executor ledger is unavailable.")
-        if found["epoch"] != record["ledger_epoch"]:
-            return self.unknown(f"The ledger ({found['epoch']}) is not the one the intent was sent to "
-                                f"({record['ledger_epoch']}), so an absent key may still be pending or applied.")
+        if not found["same_instance"]:
+            return self.unknown("The ledger instance changed. The original request may still be pending or applied.")
         state = found["state"]
         if state != "absent" and found["binding"] != binding(record):
             notes["outcome"] = "conflict"
