@@ -4,7 +4,7 @@
 
 If the agent loses the reply to a restart request, it reads the action record. The restart can succeed even when the reply never arrives.
 
-Draft for owner review · [Issue 11](https://github.com/jpboliv/meridian-project/issues/11).
+State: **Agreed** for M3 · [Owner sign-off, 23 November](https://github.com/jpboliv/meridian-project/issues/11#issuecomment-7116373196).
 
 A checkpoint records unfinished work. A receipt records the executor's result. Before dispatch, save the incident, step, caller, target, action, parameters, stable action key, approval reference, evidence references, and remaining budget. Save the intent before the executor can act. Write each checkpoint as one complete update.
 

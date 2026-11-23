@@ -2,6 +2,8 @@
 
 | Decision | Reason |
 |---|---|
+| Agreed, 23 Nov 2026: [two read-only specialists, one shared follow-up, one lead with dispatch authority](https://github.com/jpboliv/meridian-project/issues/10#issuecomment-7116373182). | A second account of an alert is not independent evidence. Bound the extra investigation and compare it with the single agent under the same budget. |
+| Agreed, 23 Nov 2026: [reconcile a replacement worker's saved intent with the surviving executor](https://github.com/jpboliv/meridian-project/issues/11#issuecomment-7116373196). | A missing reply does not mean the restart failed. Recover its receipt without repeating it; check current health before reporting recovery. |
 | Agreed, 21 Nov 2026: keep code, issues, milestones and review PRs in the private `jpboliv/meridian-project` repository. | A PR and its issues can now share a GitHub milestone. The owner can review the implementation and its evidence in one place. |
 | Agreed, 19 Nov 2026 ([#3](https://github.com/jpboliv/meridian-project/issues/3)): reuse the Meridian simulator as a starting point. We can add tools and cases, and change the simulator when an experiment warrants it. | The simulated exchange makes trials repeatable. Its existing tool catalog and fault models do not limit the questions we can test. |
 | Study memory, context, and caching together. | The owner wants to explain how earlier information affects current decisions. |

@@ -1,5 +1,7 @@
 # Current focus
 
+M3 started on 23 November. The owner agreed to the [specialist handoff](https://github.com/jpboliv/meridian-project/issues/10#issuecomment-7116373182) and [worker resume](https://github.com/jpboliv/meridian-project/issues/11#issuecomment-7116373196) contracts. First compare a complete handoff and a missing reply against the single agent ([#18](https://github.com/jpboliv/meridian-project/issues/18)). Then replace the worker after the applied restart and verify the original receipt, fresh health readings and exactly one effect ([#19](https://github.com/jpboliv/meridian-project/issues/19)). Both demonstrations start offline.
+
 [Interactive presentation for Luís](projects/course-02-agentic-ai/docs/meridian-interativo.html) (#20, branch `presentation/m2-interactive-report`): one offline HTML page in Portuguese with the 10:02/10:05 reference case as a step-through story, the M1 A/B trace and the M2 results. Documentation only; no code, simulator, tag or live run changed.
 
 M2 is complete. The [owner accepted the release](https://github.com/jpboliv/meridian-project/issues/17#issuecomment-7114986712); the annotated [M2 tag](https://github.com/jpboliv/meridian-project/tree/M2) points to `658b9c0`, and [#17](https://github.com/jpboliv/meridian-project/issues/17) is closed.
