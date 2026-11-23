@@ -105,7 +105,7 @@ Há dois caminhos: o ZIP `Meridian-M1`, recebido diretamente, ou um clone Git do
 
 **Precisa de:** [uv](https://docs.astral.sh/uv/getting-started/installation/) e uma shell POSIX (bash ou zsh). Para o clone, também Git e acesso de leitura autorizado e autenticado ao repositório privado; basta o gestor de credenciais do Git ou o início de sessão habitual da organização. A Internet só é necessária no passo 1, para descarregar as dependências e, no clone, para clonar; a análise corre sem rede. **Não precisa de** `.env`, chave de API, serviços alojados, ficheiros do formador nem execuções pagas. Com o ZIP, também não precisa de conta GitHub, acesso ao repositório nem chave do projeto.
 
-**Ambiente verificado:** Linux, Python 3.14.8 e uv 0.13.9. Outros ambientes não foram verificados.
+**Ambiente verificado:** Linux, Python 3.14.8 e uv 0.13.9. Testámos o percurso num clone novo e numa extração do ZIP sem `.git`. Depois de instaladas as dependências, os testes e a análise correram sem rede e sem chave. Outros ambientes não foram verificados.
 
 **1a. Preparar a partir do ZIP.** Extraia o ZIP. Leia `Meridian-M1/LEIA-ME.txt` ou abra no browser `Meridian-M1/projects/course-02-agentic-ai/docs/relatorio.html`, a versão HTML deste relatório. Abra um terminal na pasta extraída `Meridian-M1`, a que contém `pyproject.toml`, e corra:
 
