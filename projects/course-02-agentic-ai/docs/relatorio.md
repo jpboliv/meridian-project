@@ -1,6 +1,6 @@
 # Meridian: o agente de primeira linha
 
-Projeto Agentic AI · M1 testado offline (`gateway-m1.6`) · linha de base real com 15 execuções públicas: 9/15 passaram · dois pilotos anteriores no caso B
+Projeto Agentic AI · M1 testado offline (`gateway-m1.6`) · linha de base real com 15 execuções públicas: 9/15 passaram · dois pilotos anteriores no caso B · seguimento offline `gateway-m1.7`, ainda sem execução real
 
 ## Pergunta
 
@@ -58,7 +58,7 @@ flowchart TD
 
 ## Evidência
 
-Os cinco casos passaram com decisões programadas em `gateway-m1.6`, com os mesmos resultados de `gateway-m1.5` ([registos](../first_line/offline-traces-m1.6.jsonl)). O laboratório offline usa só estas decisões programadas. Com o modelo real houve dois pilotos no caso B, um em cada revisão, e depois a linha de base com 15 execuções (ver abaixo).
+Os cinco casos passaram com decisões programadas em `gateway-m1.6`, com os mesmos resultados de `gateway-m1.5` ([registos](../first_line/offline-traces-m1.6.jsonl)). O laboratório offline usa só estas decisões programadas; corre o código atual (`gateway-m1.7`), cujos [registos programados](../first_line/offline-traces-m1.7.jsonl) dão os mesmos resultados. Com o modelo real houve dois pilotos no caso B, um em cada revisão, e depois a linha de base com 15 execuções (ver abaixo).
 
 **Reinício, caso A.** A instância 2 estava a 93,9 % de memória e as ligações ativas. Após o reinício aprovado (tick 23): 6,5, 5,0 e 5,0 ms. [Registo A](../first_line/offline-traces-m1.6.jsonl#L1).
 
@@ -73,6 +73,14 @@ Os cinco casos passaram com decisões programadas em `gateway-m1.6`, com os mesm
 Custo a preços padrão: 0,0001781 USD antes e 0,0001389 USD depois (estimativa, não fatura). Há uma só observação por revisão, por isso não prova que a alteração causou a diferença. Também não é linha de base nem resultado do #21.
 
 **Linha de base real (22 nov. 2026, `gateway-m1.6`).** Três rondas de A a E, cada execução nova, com `gpt-6-luna`, até 6 pedidos e 512 tokens de saída por pedido. Passaram 9 de 15: A 1/3, B 3/3, C 3/3, D 2/3, E 0/3. Houve quatro reinícios autorizados, todos na instância certa, e nenhum outro efeito. Nas três falhas de E, o modelo nunca escolheu a passagem ao operador com a fonte exigida (a ligação degradada); em duas delas nem leu a ligação. Ao atingir o limite de pedidos, foi o código que fez a passagem ao operador, sem efeitos. Custo estimado a preços padrão: 0,0075555 USD (não é fatura). Três execuções por caso não estabelecem uma taxa geral de sucesso. [Resultado e registos](experiments.md#2026-11-22-public-m1-baseline-gateway-m16).
+
+**Seguimento offline (23 nov. 2026, `gateway-m1.7`).** Os limites mantêm-se: 6 pedidos, 512 tokens e uma reparação. Os avaliadores e a linha de base também não mudaram.
+
+- **E.** Se uma nova leitura não trouxer uma amostra mais recente para nenhuma instância que estava desatualizada, o código para de reler. Usa só ligações lidas depois dessa leitura: a do próprio modelo, se foi ele a reler as ligações; senão, consulta as ligações mais uma vez e descarta a leitura anterior. Passa ao operador a ligação degradada com a fonte, ou diz que não há falha estabelecida. Se essa consulta falhar, não cita nenhuma ligação e diz que o estado é desconhecido.
+- **D.** O alvo tem de ser exatamente uma ligação observada com falha. Caso contrário, há uma reparação e depois uma passagem segura, sem efeitos.
+- **A.** O modelo vê quando as observações atuais já suportam o reinício, com a mesma regra que o autoriza. Uma falha de decisão tem agora um código: limite de saída, validação esgotada, erro do fornecedor ou desconhecido.
+
+Nos testes com respostas simuladas, as escolhas gravadas de E terminam em 3 pedidos e passam. A escolha gravada de D3, seguida de uma escolha válida, também passa. São escolhas repetidas, não resultados do modelo. [Registo](experiments.md#2026-11-23-offline-follow-up-to-the-baseline-failures-gateway-m17).
 
 **Prefixo, offline.** Em 13 pares de decisões seguidas, o JSON do utilizador partilha 22 bytes iniciais (mediana) com a hora no início e 920 com ela no fim. São bytes, não tokens: não mostram leituras da cache nem se o prefixo chega aos 1024 tokens exigidos ([notas](experiments.md#context-reuse-arms-prepared-offline)).
 

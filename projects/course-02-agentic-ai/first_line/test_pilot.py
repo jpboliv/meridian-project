@@ -18,8 +18,18 @@ from pilot import ARMS, Pilot, ProviderBudget, with_current_time
 MODEL = "pilot-test-model"  # a placeholder: no model has been chosen for the paid pilot
 
 
+class Wire:
+    """A 200 Responses body with chosen structured signals. `arguments` is the raw function-call text (None: no
+    call); `reasoning` adds a reasoning item; `status=None` omits the field."""
+
+    def __init__(self, arguments=None, *, status="completed", reason=None, output_tokens=10, reasoning=False):
+        self.arguments, self.status, self.reason = arguments, status, reason
+        self.output_tokens, self.reasoning = output_tokens, reasoning
+
+
 class FakeResponses:
-    """Answers each request in turn. A dict is a decision; an int is an error status; an exception is raised.
+    """Answers each request in turn. A dict is a decision; an int is an error status; an exception is raised;
+    a `Wire` is a 200 body with the given status, incomplete reason and output.
 
     `details` gives `usage.input_tokens_details` for each successful response in turn; `...` omits the field."""
 
@@ -39,14 +49,23 @@ class FakeResponses:
             return httpx2.Response(answer, headers={"retry-after-ms": "1"},  # keeps any SDK retry fast
                                    json={"error": {"message": "upstream detail sk-not-for-traces"}})
         tool = body["tools"][0]["name"]  # the output tool the agent declared
+        wire = answer if isinstance(answer, Wire) else Wire(json.dumps(answer))
+        n = len(self.bodies)
+        output = [{"type": "reasoning", "id": f"rs_{n}", "summary": []}] if wire.reasoning else []
+        if wire.arguments is not None:
+            output.append({"type": "function_call", "id": f"fc_{n}", "call_id": f"call_{n}",
+                           "name": tool, "arguments": wire.arguments, "status": "completed"})
         body = {
-            "id": f"resp_{len(self.bodies)}", "object": "response", "created_at": 1763700000, "status": "completed",
+            "id": f"resp_{n}", "object": "response", "created_at": 1763700000, "status": wire.status,
             "model": f"{body['model']}-2026-11-01", "parallel_tool_calls": True, "tool_choice": "required", "tools": [],
-            "output": [{"type": "function_call", "id": f"fc_{len(self.bodies)}", "call_id": f"call_{len(self.bodies)}",
-                        "name": tool, "arguments": json.dumps(answer), "status": "completed"}]}
+            "output": output}
+        if wire.status is None:
+            del body["status"]
+        if wire.reason:
+            body["incomplete_details"] = {"reason": wire.reason}
         if self.usage:
-            body["usage"] = {"input_tokens": 100 + len(self.bodies), "output_tokens": 10,
-                             "total_tokens": 110 + len(self.bodies)}
+            body["usage"] = {"input_tokens": 100 + n, "output_tokens": wire.output_tokens,
+                             "total_tokens": 100 + n + wire.output_tokens}
             details = self.details.pop(0) if self.details else ...
             if details is not ...:
                 body["usage"]["input_tokens_details"] = details
@@ -96,15 +115,17 @@ def test_invalid_live_command_stops_before_any_key_or_client(argv, monkeypatch):
 
 
 def test_offline_runs_all_five_cases_or_one_unchanged(capsys):
-    recorded = (demo.HERE / "offline-traces-m1.6.jsonl").read_text(encoding="utf-8").splitlines()
+    recorded = (demo.HERE / "offline-traces-m1.7.jsonl").read_text(encoding="utf-8").splitlines()
     assert asyncio.run(demo.main([])) == 0
     assert capsys.readouterr().out.splitlines() == recorded
     assert asyncio.run(demo.main(["--case", "b"])) == 0
     assert capsys.readouterr().out.splitlines() == [line for line in recorded if '"case": "shift-b"' in line]
-    # m1.6 changed only the decision context and live instructions: scripted runs keep every m1.5 outcome.
-    earlier = (demo.HERE / "offline-traces-m1.5.jsonl").read_text(encoding="utf-8").splitlines()
+    # m1.7 changed the decision context, live instructions, and paths the scripted order never reaches (a refresh
+    # without new evidence, an ineligible handover target, a model failure): every m1.6 (and m1.5) outcome holds.
     strip = lambda line: {k: v for k, v in json.loads(line).items() if k not in ("revision", "harness_sha256")}
-    assert [strip(line) for line in recorded] == [strip(line) for line in earlier]
+    for name in ("offline-traces-m1.6.jsonl", "offline-traces-m1.5.jsonl"):
+        earlier = (demo.HERE / name).read_text(encoding="utf-8").splitlines()
+        assert [strip(line) for line in recorded] == [strip(line) for line in earlier]
 
 
 def live_main(monkeypatch, argv, fake, env_model):
@@ -175,7 +196,8 @@ def test_successful_response_without_usage_is_unknown_not_zero():
     call, = record["completed_model_calls"]
     assert call == {"model": f"{MODEL}-2026-11-01", "requests": 1, "input_tokens": None, "output_tokens": None}
     run = record["pilot"]
-    assert run["attempts"] == [{"status": 200, "model": f"{MODEL}-2026-11-01", "input_tokens": None, "output_tokens": None,
+    assert run["attempts"] == [{"status": 200, "model": f"{MODEL}-2026-11-01", "response_status": "completed",
+                                "incomplete_reason": None, "input_tokens": None, "output_tokens": None,
                                 "cached_tokens": None, "cache_write_tokens": None}]
     assert run["reported_input_tokens"] is None and run["reported_output_tokens"] is None
     assert run["reported_cached_tokens"] is None and run["reported_cache_write_tokens"] is None
@@ -211,6 +233,7 @@ def test_retryable_provider_failure_is_sent_once_and_handed_over(failure):
     run = record["pilot"]
     assert run["requests_sent"] == 1 and run["requests_refused"] == 0
     assert run["attempts"] == [{"status": failure if isinstance(failure, int) else None, "model": None,
+                                "response_status": None, "incomplete_reason": None,
                                 "input_tokens": None, "output_tokens": None,
                                 "cached_tokens": None, "cache_write_tokens": None}]
     assert run["reported_cached_tokens"] is None and run["reported_cache_write_tokens"] is None
@@ -219,6 +242,7 @@ def test_retryable_provider_failure_is_sent_once_and_handed_over(failure):
     assert record["completed_model_calls"] == [] and record["decisions"] == []
     assert record["report"]["status"] == "needs_operator" and record["applied_effects"] == 0
     assert record["report"]["next_step"].startswith("Model unavailable")  # a provider failure, not the cap
+    assert record["report"]["model_failure"] == "provider_error"
     assert "sk-not-for-traces" not in json.dumps(record) and "connection reset" not in json.dumps(record)
 
 
@@ -402,11 +426,16 @@ def test_offline_prefix_overlap_matches_the_issue_21_measurement():
     assert (min(last), statistics.median(last), max(last)) == (821, 920, 1315)
 
 
-# --- #13: what each live decision sees after the ticket read (gateway-m1.6) ----------------------------------
+# --- #13: what each live decision sees after the ticket read (gateway-m1.6, extended in m1.7) -----------------
 # The mock replays chosen decisions. A mocked pass shows what the harness permits, not what a model would choose.
 
 def sent_progress(fake):
     return [json.loads(user_json(body))["progress"] for body in fake.bodies]
+
+
+def cue(ticket, steps, faulty=(), restart=None):
+    """The m1.7 progress cue: the m1.6 ticket state and step counts, the eligible link targets, the restart check."""
+    return {"ticket": ticket, "completed_steps": steps, "faulty_links": list(faulty), "restart_supported": restart}
 
 
 TICKET_STATES = ("not searched", "matched", "no match")
@@ -422,10 +451,8 @@ def test_recorded_pilot_choices_now_see_the_matched_ticket_and_still_fail():
         assert "Start by correlating" not in body["instructions"]
         assert all(f'"{state}"' in body["instructions"] for state in TICKET_STATES)
         assert list(json.loads(user_json(body)))[-1] == "progress"  # after the stable prefix and observations
-    assert sent_progress(fake) == [
-        {"ticket": "not searched", "completed_steps": {}},
-        {"ticket": "matched", "completed_steps": {"tickets": 1}},
-        {"ticket": "matched", "completed_steps": {"tickets": 2}}]
+    assert sent_progress(fake) == [cue("not searched", {}), cue("matched", {"tickets": 1}),
+                                   cue("matched", {"tickets": 2})]
     assert user_json(fake.bodies[1]) != user_json(fake.bodies[2])  # byte-identical under m1.5
     # Nothing routes the run: repeated choices are executed, spend the cap, and the case still fails.
     assert [d["step"] for d in record["decisions"]] == ["tickets"] * 3
@@ -443,7 +470,7 @@ def test_an_alternate_next_read_proceeds_within_the_same_cap(steps):
     assert all(p["ticket"] == "matched" for p in sent_progress(fake)[1:])
     assert record["report"]["follow_up"]["targets"] == ["order-gateway-1", "order-gateway-2"]
     if "links" in steps[:-1]:  # one completed links step, although it made two check_link calls
-        assert sent_progress(fake)[-1] == {"ticket": "matched", "completed_steps": {"tickets": 1, "links": 1}}
+        assert sent_progress(fake)[-1] == cue("matched", {"tickets": 1, "links": 1})  # B's links are healthy
         tools = [row["tool"] for row in record["reads_and_actions"]]
         assert tools[:tools.index("deployments.get_service")].count("check_link") == 2
 
@@ -460,9 +487,7 @@ def test_an_empty_or_unmatched_search_is_not_called_matched_and_can_be_repeated(
     fake = FakeResponses({"step": "tickets"}, {"step": "tickets"}, {"step": "handover"})
     report = asyncio.run(shift.run(pilot_with(fake, 3, 512, model=LUNA).decider([])))
     assert report["observations"]["tickets"] == []
-    assert sent_progress(fake) == [
-        {"ticket": "not searched", "completed_steps": {}},
-        {"ticket": "no match", "completed_steps": {"tickets": 1}},
-        {"ticket": "no match", "completed_steps": {"tickets": 2}}]
+    assert sent_progress(fake) == [cue("not searched", {}), cue("no match", {"tickets": 1}),
+                                   cue("no match", {"tickets": 2})]
     assert sum(c.tool == "tickets.search_issues" for c in shift.tools.trace) == 2  # the repeat was not blocked
     assert report["status"] == "needs_operator" and not sim.executor.effects()
