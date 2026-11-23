@@ -69,6 +69,18 @@ uv run --locked python projects/course-02-agentic-ai/first_line/handover_study.p
 
 With no options, the command runs the 12-slot plan with scripted decisions, the acceptance controls and a summary. The output matches [`offline-study-m2.jsonl`](first_line/offline-study-m2.jsonl). Use `--plan` to print the slot plan and `--slot N` to run one slot. `--freeze-protocol --model M --max-requests R --max-output-tokens T --ledger FILE` starts a live ledger. It records the expected model, the run mode, the limits, and the harness and reminder hashes. `--live --slot N --max-requests R --max-output-tokens T --ledger FILE` runs exactly one planned slot with the model named by `OPENAI_MODEL`. It refuses to start if the code, limits or model differ from the protocol, or if the slot was already started. It writes a start record before the first request. A failed or interrupted slot keeps an end record with every request sent. It is a paid run under the same bounds as the single-case pilot, and the owner must authorize its settings and spending first. `--summarize FILE` checks each record against the protocol before grading it against the plan. It lists invalid, interrupted, unrun and retried slots, cap stops, cache counts and memory costs. Usage covers every request sent, and unknown stays unknown. It reports spending from every live run separately, as token counts, not dollars. Scripted records stay a separate harness control and never enter the verdict. Only pairs in which the reminder was eligible and shown can credit it. The verdict rule is a Draft until the owner decides. The [experiment log](docs/experiments.md#2026-11-23-m2-handover-comparison-prepared-offline) has the design, the offline results and the limits.
 
+## Run the M3 specialist handoffs (#18)
+
+[#18](https://github.com/jpboliv/meridian-project/issues/18) applies the agreed [handoff contract](docs/specs/coordination.md). A lead asks an application specialist (change records, tickets, service logs) and then an infrastructure specialist (per-instance metrics, links). Both are read-only, and the lead checks each reply against its task and the trace. It allows one follow-up across both, and then acts through the unchanged M2 restart gates or hands over. One 32-call budget covers the lead and both specialists, and the single agent gets the same budget. Decisions are scripted; no model or key is used. From the repository root:
+
+```sh
+cd projects/course-02-agentic-ai/team
+PYTHONPATH=../../.. python m3_demo.py --part handoff --summary
+PYTHONPATH=../../.. python m3_demo.py --part handoff | cmp - offline-traces-m3.jsonl
+```
+
+The first command prints one line per run with its outcome, calls by role and effects. The second checks that the JSON records match [`offline-traces-m3.jsonl`](team/offline-traces-m3.jsonl); each record carries its own checks. The [experiment log](docs/experiments.md#2026-11-23-m3-specialist-handoffs-offline) explains the complete, missing, conflicting and repair runs and the single-agent comparison.
+
 ## Run one case in the lab
 
 From the repository root, with no API key:

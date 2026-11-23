@@ -1,0 +1,16 @@
+# M3 conflicting-finding fixture: public A with an intermittent reference-db link. The link is degraded until
+# tick 20, up at ticks 20-22 and degraded again from tick 23. Gateway logs keep the earlier slow responses.
+id: shift-m
+title: An intermittent dependency link behind a hot gateway replica
+seed: 11
+date: "2026-11-09"
+start_time: "10:05"
+warmup_ticks: 15
+incident: {id: INC-4600, summary: "The order gateway is slow.", alert: latency_high/order-gateway}
+tickets:
+  - {at: 14, key: MRX-4600, component: order-gateway, summary: "INC-4600: slow order acknowledgements"}
+faults:
+  - {type: resource, at: 2, instance: order-gateway-2, resource: memory, start_value: 93, rate: 0.05}
+  - {type: link, at: 2, until: 20, source: order-gateway, target: reference-db, mode: degraded, extra_latency_ms: 185}
+  - {type: link, at: 23, source: order-gateway, target: reference-db, mode: degraded, extra_latency_ms: 185}
+approver: {approve_roles: [on-call]}
