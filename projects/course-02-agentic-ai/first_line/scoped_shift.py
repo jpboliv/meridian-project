@@ -6,9 +6,11 @@ from datetime import datetime, timedelta
 from meridian.agent_runtime import IncidentDeps
 from meridian.tools import MeridianTools
 
-from scoped_access import READ, RESTART
+from scoped_access import LINKS, READ, RESTART
 from scoped_memory import Evidence, Lesson
 from shift import Decision, GATEWAY, Shift
+
+DROP = 0.9  # a latency sample at or below 90% of the one before it starts a recovery
 
 
 class ScopedTools(MeridianTools):
@@ -31,7 +33,6 @@ class ScopedTools(MeridianTools):
             ]}
 
         return super()._run(tool, args, safe_tickets)
-
 
     def request_approval(self, action, target, reason, approver_role="on-call"):
         shift = self.shift
@@ -70,7 +71,10 @@ class ScopedShift(Shift):
         self.access = access
         self.memory = memory
         self.readers = readers
+        self.shift_id = memory.open_shift(self.brief["incident_id"])
+        self.deployment = None  # this shift's traced deployment record
         self.memory_trace = []
+        self.closed = False
 
     def now(self):
         return self.time_at(self.deps.sim.state.tick)
@@ -78,9 +82,47 @@ class ScopedShift(Shift):
     def time_at(self, tick):
         return datetime.fromisoformat(self.deps.sim.clock.timestamp(tick))
 
+    async def read(self, server, tool, args, schema):
+        result = await super().read(server, tool, args, schema)
+        if (server, tool) == ("deployments", "get_service"):
+            self.deployment = {"critical": result.critical, "version": result.version, "replicas": result.replicas,
+                               "source": f"deployments.get_service/{self.tools.trace[-1].tick}"}
+        return result
+
+    def dispatch_evidence(self, target):
+        """Fresh traced readings for the restart need, taken after the grant: every replica in one metrics
+        read, then both dependency links. Returns the sources and the first unmet condition, if any."""
+        metrics = self.tools.read_metrics(GATEWAY, window_ticks=1, per_instance=True)
+        read_tick = self.tools.trace[-1].tick
+        rows = metrics.get("readings") if metrics.get("component") == GATEWAY else None
+        row = rows[-1] if rows else {}
+        sources = [metrics["source_ref"]] if rows else []
+        hot = sorted(name for name, sample in row.get("instances", {}).items()
+                     if sample["status"] == "running" and sample["memory_pct"] > 90)
+        links = {}
+        for name in LINKS:
+            link = self.tools.check_link(GATEWAY, name)
+            if link.get("source") == GATEWAY and link.get("target") == name and "state" in link:
+                links[name] = link["state"]
+                sources.append(f"check_link/{name}/{link['observed_tick']}")
+        if not rows:
+            problem = "no_instance_reading"
+        elif row["tick"] != read_tick:
+            problem = "stale_instance_reading"
+        elif not str(row.get("version", "")).startswith("2.4."):
+            problem = "no_applicable_procedure"
+        elif hot != [target]:
+            problem = "target_not_sole_hot_instance"
+        elif links != dict.fromkeys(LINKS, "up"):
+            problem = "dependency_link_not_up"
+        else:
+            problem = None
+        return {"problem": problem, "sources": sources, "hot_running": hot, "links": links}
+
     def restart(self, target):
         if not self.access.allowed_target(self, target):
-            self.access.decisions.append({"tick": self.deps.sim.state.tick, "decision": "permission_denied"})
+            self.access.decisions.append({"tick": self.deps.sim.state.tick, "target": target,
+                                          "decision": "permission_denied", "reason": "rights_or_scope"})
             return self.report("denied", "Inspect current gateway instance readings and dependency links.")
         before = len(self.access.decisions)
         report = super().restart(target)
@@ -103,11 +145,34 @@ class ScopedShift(Shift):
         return {"per_instance_readings": 1,
                 "hot_instance": int(any(row["memory_pct"] > 90 for row in samples.values()))}
 
+    def check_claims(self):
+        """Correct a team claim about this incident as soon as traced evidence contradicts it, before the next
+        decision. The latency history comes from one metrics read; the restart time from a recorded receipt."""
+        principal, incident = self.access.requester, self.brief["incident_id"]
+        claims = self.memory.claims(principal, incident)
+        if not claims:
+            return
+        metrics = self.tools.read_metrics(GATEWAY, window_ticks=30)
+        rows = metrics.get("readings", []) if metrics.get("component") == GATEWAY else []
+        refs = self.memory.incident_sources(principal, incident, "restart")
+        drop = next((row for before, row in zip(rows, rows[1:])
+                     if row["latency_ms"] <= DROP * before["latency_ms"]), None)
+        if drop:
+            ref = f"{self.shift_id}/{metrics['source_ref']}/latency_drop"
+            self.memory.record(Evidence(ref, incident, GATEWAY, self.time_at(drop["tick"]), "tool",
+                                        self.readers, "latency_drop", drop["latency_ms"], principal.team))
+            refs.append(ref)
+        for claim in claims:
+            result = self.memory.assess_restart_claim(principal, claim, tuple(refs), self.now())
+            self.memory_trace.append({"tick": self.tools.trace[-1].tick, "checked_claim": claim,
+                                      "assessment": result, "sources": refs})
+
     async def run(self, decide):
         if not self.access.permits(self, READ):
             return self.report("denied", "Ask the gateway team for a permitted health reading.")
 
         principal = self.access.requester
+        self.check_claims()
         handover_token = object()
         pending = self.memory.handover(principal, GATEWAY, self.now(), {}, handover=handover_token)
         note_ids = [row["id"] for row in pending if row["kind"] == "note"]
@@ -122,56 +187,72 @@ class ScopedShift(Shift):
             notes = [self.memory.lookup(self.access.requester, key, now, conditions, handover=handover_token)
                      for key in note_ids]
             handover = [row for row in notes if row is not None] + [row for row in views if row["kind"] != "note"][:2]
-            self.memory_trace.append({"tick": self.deps.sim.state.tick,
-                                      "conditions": conditions, "shown": [row["id"] for row in handover]})
-            corrections = [view for key in self.memory.withdrawn
-                           if (view := self.memory.correction(self.access.requester, key)) is not None]
-            decision = await decide({**context, "handover": handover, "corrections": corrections})
+            corrections = {key: view for key in self.memory.withdrawn
+                           if (view := self.memory.correction(self.access.requester, key)) is not None}
+            self.memory_trace.append({"tick": self.deps.sim.state.tick, "conditions": conditions,
+                                      "shown": [row["id"] for row in handover], "corrections": sorted(corrections)})
+            decision = await decide({**context, "handover": handover, "corrections": list(corrections.values())})
             return decision if self.access.permits(self, READ) else Decision(step="handover")
 
         report = await super().run(decide_with_memory)
-        if self.access.permits(self, READ):
-            self.close(report)
-        else:
+        if not self.access.permits(self, READ):
             report = self.report("denied", "Ask the gateway team for a permitted health reading.")
             report["observations"] = {}
+            return report
+        try:
+            self.close(report)
+        except (ValueError, PermissionError) as error:
+            # The report and any receipt stand even if the shift record cannot be saved.
+            self.memory_trace.append({"close_failed": str(error)})
+            report["memory_error"] = "Shift record not saved. The report and any action receipt stand."
         return report
 
     def close(self, report):
-        principal = self.access.requester
-        incident = self.brief["incident_id"]
-        refs = []
-        for instance, sample in self.observations.get("instances", {}).items():
-            ref = f"{incident}/{sample['source']}"
+        """Save this shift's evidence and proposals once. IDs are scoped to the shift, so another shift of the
+        same incident never collides with or replaces them; closing again is a no-op."""
+        if self.closed:
+            return
+        principal, incident, shift_id = self.access.requester, self.brief["incident_id"], self.shift_id
+        evidence, lessons, current = [], [], []
+        samples = self.observations.get("instances", {})
+        for instance, sample in samples.items():
+            ref = f"{shift_id}/{sample['source']}"
             read_at = self.time_at(int(ref.rsplit("/", 1)[1]))
             observed = read_at.replace(hour=int(sample["time"][:2]), minute=int(sample["time"][3:5]))
             if observed > read_at:
                 observed -= timedelta(days=1)
-            if ref in self.memory.sources:
-                continue
-            self.memory.record(Evidence(ref, incident, GATEWAY, observed, "tool",
-                                        self.readers, instance, sample["memory_pct"], principal.team))
+            evidence.append(Evidence(ref, incident, GATEWAY, observed, "tool",
+                                     self.readers, instance, sample["memory_pct"], principal.team))
             if sample["freshness"] == "current":
-                refs.append(ref)
-        for target, link in self.observations.get("links", {}).items():
-            ref = f"{incident}/check_link/{target}/{link['tick']}"
-            self.memory.record(Evidence(ref, incident, GATEWAY, self.time_at(link["tick"]),
-                                        "tool", self.readers, target, link["state"], principal.team))
-            if (report.get("follow_up", {}).get("target") == target
-                    and principal.id in self.readers):
-                self.memory.save(principal, Lesson(f"{incident}/open-link", principal.team, principal.id,
-                                                   GATEWAY, "link_read", "Check the dependency link again.",
-                                                   (ref,), self.now(), kind="note"))
-                self.memory_trace.append({"saved": f"{incident}/open-link", "sources": [ref]})
+                current.append(ref)
+        links = self.observations.get("links", {})
+        link_refs = {}
+        for target, link in links.items():
+            link_refs[target] = f"{shift_id}/check_link/{target}/{link['tick']}"
+            evidence.append(Evidence(link_refs[target], incident, GATEWAY, self.time_at(link["tick"]),
+                                     "tool", self.readers, target, link["state"], principal.team))
         if self.action:
             receipt = self.action
-            self.memory.record(Evidence(f"{incident}/{receipt['receipt']}", incident, GATEWAY,
-                                        self.time_at(receipt["tick"]),
-                                        "tool", self.readers, "restart", receipt["target"], principal.team))
-        if (refs and len(refs) == len(self.observations["instances"]) and "missing" not in self.observations
-                and any(row["memory_pct"] > 90 for row in self.observations["instances"].values())
-                and principal.id in self.readers):
-            self.memory.save(principal, Lesson(f"{incident}/compare", principal.team, principal.id, GATEWAY,
-                                               "hot_instance", "Compare current instance readings and check both links.",
-                                               tuple(refs), self.now()))
-            self.memory_trace.append({"saved": f"{incident}/compare", "sources": refs})
+            evidence.append(Evidence(f"{shift_id}/{receipt['receipt']}", incident, GATEWAY,
+                                     self.time_at(receipt["tick"]), "tool", self.readers, "restart",
+                                     receipt["target"], principal.team))
+        follow = report.get("follow_up", {}).get("target")
+        if follow in link_refs and principal.id in self.readers:
+            link = links[follow]
+            lessons.append(Lesson(f"{shift_id}/open-link", principal.team, principal.id, GATEWAY, "link_read",
+                                  f"Read the {follow} link again: check_link reported {link['state']} "
+                                  f"at tick {link['tick']}.", (link_refs[follow],), self.now(), kind="note"))
+        hot = [name for name, sample in samples.items() if sample["memory_pct"] > 90]
+        if (current and len(current) == len(samples) and "missing" not in self.observations and len(hot) == 1
+                and len(link_refs) == len(LINKS) and principal.id in self.readers):
+            states = ", ".join(f"{target} {links[target]['state']}" for target in LINKS)
+            lessons.append(Lesson(f"{shift_id}/compare", principal.team, principal.id, GATEWAY, "hot_instance",
+                                  f"Compare current per-instance readings and read both dependency links before "
+                                  f"a restart decision. Cited: {hot[0]} above 90% memory; links {states}.",
+                                  tuple(current + [link_refs[target] for target in LINKS]), self.now()))
+        for source in evidence:
+            self.memory.record(source)
+        for lesson in lessons:
+            self.memory.save(principal, lesson)
+            self.memory_trace.append({"saved": lesson.id, "text": lesson.text, "sources": list(lesson.sources)})
+        self.closed = True

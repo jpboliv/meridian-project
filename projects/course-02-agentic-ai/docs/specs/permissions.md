@@ -1,6 +1,6 @@
 # Permissions and approvals
 
-Implementation state: **Implemented** in the offline first-line workflow. See the [public cases, traces, and checks](../experiments.md#2026-11-23-m2-scoped-handover-and-access).
+Implementation state: partial and offline, on `m2/scoped-handover-access` (PR #36, not merged). The offline shift flow enforces identity, scope, a single-use approval and fresh traced evidence at dispatch. Personal-data masking beyond removing ticket text and re-reading the critical flag at dispatch are outstanding. Rollback stays deferred. See [what is integrated](../experiments.md#what-is-integrated-what-is-library-only-and-what-is-outstanding).
 
 State: **Agreed** for M2 · [Owner sign-off, 23 November](https://github.com/jpboliv/meridian-project/issues/9#issuecomment-7105048144).
 

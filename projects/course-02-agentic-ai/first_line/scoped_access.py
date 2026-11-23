@@ -1,11 +1,18 @@
-"""Authenticated run scope and simulator restart authorization for M2."""
+"""Authenticated run scope and simulator restart authorization for M2.
 
+Access decisions use the authenticated principals, the approval ledger, the simulated clock and traced tool
+results from this shift. They never read the simulator's hidden world state.
+"""
+
+import re
 from dataclasses import dataclass, field
 
 from shift import GATEWAY
 
 RESTART = "restart_instance"
 READ = "read_gateway"
+LINKS = ("reference-db", "matching-engine")
+GRANT_TICKS = 5
 
 
 @dataclass(frozen=True)
@@ -37,13 +44,11 @@ class Access:
                 and shift.deps.sim.state.tick < self.shift_end)
 
     def allowed_target(self, shift, target):
-        if not self.permits(shift, RESTART):
-            return False
-        try:
-            component, _ = shift.deps.sim.state.instance(target)
-        except KeyError:
-            return False
-        return component.name == GATEWAY and not component.critical
+        """One noncritical gateway instance, by name and by this shift's traced deployment record."""
+        match = re.fullmatch(rf"{GATEWAY}-([1-9][0-9]*)", target)
+        deployment = shift.deployment
+        return (self.permits(shift, RESTART) and match is not None and deployment is not None
+                and deployment["critical"] is False and int(match[1]) <= deployment["replicas"])
 
     def binding(self, shift, target, key):
         return (self.requester.id, self.requester.team, self.credential.id, self.approver.id,
@@ -55,44 +60,57 @@ class Access:
 
     def grant(self, shift, target, record):
         if record.get("status") == "approved" and self.approver_allowed():
-            expires = min(record.get("expires_tick", self.shift_end), record["tick"] + 5, self.shift_end)
+            expires = min(record.get("expires_tick", self.shift_end), record["tick"] + GRANT_TICKS, self.shift_end)
             key = f"{shift.brief['incident_id']}:restart:{target}"
             self.grants[record["approval_ref"]] = (self.binding(shift, target, key), expires)
 
     def current_approval(self, shift, target, ref, tick):
-        records = shift.deps.sim.approvals
-        record = next((row for row in records if row["approval_ref"] == ref), None)
+        """The approval ledger entry is still approved, exact and unexpired at `tick`."""
+        record = next((row for row in shift.deps.sim.approvals if row["approval_ref"] == ref), None)
         return (record is not None and record["status"] == "approved" and record["action"] == RESTART
                 and record["target"] == target and record["requested_by"] == shift.tools.actor
                 and record["approver_role"] == "on-call" and tick < record.get("expires_tick", self.shift_end))
 
-    def check_dispatch(self, shift, target, key, ref):
+    def grant_problem(self, shift, target, key, ref):
         tick = shift.deps.sim.state.tick
         grant = self.grants.get(ref)
+        if ref in self.spent:
+            return "grant_spent"
+        if grant is None:
+            return "no_grant"
+        if grant[0] != self.binding(shift, target, key):
+            return "grant_mismatch"
+        if tick >= grant[1] or not self.current_approval(shift, target, ref, tick):
+            return "grant_expired"
+        if not self.approver_allowed():
+            return "approver_not_allowed"
+        return None
+
+    def check_dispatch(self, shift, target, key, ref):
+        """The effect boundary. Rights and the grant are checked, then fresh traced readings and links are taken,
+        then rights and the grant are checked again at the tick the executor would act. Spends the grant only on
+        dispatch."""
+        record = {"tick": shift.deps.sim.state.tick, "target": target, "approval": ref}
         if not self.allowed_target(shift, target) or not self.permits(shift, READ):
-            reason = "permission_denied"
-        elif (grant is None or ref in self.spent or grant[0] != self.binding(shift, target, key)
-              or tick >= grant[1] or not self.approver_allowed()
-              or not self.current_approval(shift, target, ref, tick)):
-            reason = "approval_required"
-        elif shift.restart_evidence() != (target, None) or not self.current_need(shift, target):
-            reason = "refresh_evidence"
+            decision, reason = "permission_denied", "rights_or_scope"
+        elif problem := self.grant_problem(shift, target, key, ref):
+            decision, reason = "approval_required", problem
         else:
+            evidence = shift.dispatch_evidence(target)
+            problem = evidence.pop("problem")
+            record["evidence"] = evidence
+            if problem:
+                decision, reason = "refresh_evidence", problem
+            elif not self.allowed_target(shift, target) or not self.permits(shift, READ):
+                decision, reason = "permission_denied", "rights_changed_during_reads"
+            elif problem := self.grant_problem(shift, target, key, ref):
+                decision, reason = "approval_required", f"{problem}_during_reads"
+            else:
+                decision, reason = "dispatch", "fresh_evidence_and_grant"
+        if decision == "dispatch":
             self.spent.add(ref)
-            reason = "dispatch"
-        if reason != "dispatch":
+        else:
             self.grants.pop(ref, None)
-        self.decisions.append({"tick": tick, "decision": reason})
-        return reason
-
-
-    @staticmethod
-    def current_need(shift, target):
-        # World state is the simulator's dispatch-time check. The investigation
-        # still needs its own fresh, scoped tool observations.
-        state = shift.deps.sim.state
-        service = state.component(GATEWAY)
-        hot = [row.instance_id for row in service.instances if row.status == "running" and row.memory_pct > 90]
-        return (hot == [target] and service.version.startswith("2.4.")
-                and all(state.link(source, destination).state == "up"
-                        for source, destination in ((GATEWAY, "reference-db"), (GATEWAY, "matching-engine"))))
+        record.update(decision=decision, reason=reason, dispatch_tick=shift.deps.sim.state.tick)
+        self.decisions.append(record)
+        return decision

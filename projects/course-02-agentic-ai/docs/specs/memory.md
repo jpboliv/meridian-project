@@ -1,6 +1,6 @@
 # Memory lifecycle
 
-Implementation state: **Implemented** in the offline first-line workflow. See the [public cases, traces, and checks](../experiments.md#2026-11-23-m2-scoped-handover-and-access).
+Implementation state: partial and offline, on `m2/scoped-handover-access` (PR #36, not merged). Scoped retrieval, condition fit, ranking, clues and notes at close, and in-shift correction of a restart claim run in the offline shift flow. Deletion is shown in traces between shifts. Procedure approval, published editions, clue review and reader changes are tested only as library functions. Persistence and the operator handoff for a blocking conflict are outstanding. See [what is integrated](../experiments.md#what-is-integrated-what-is-library-only-and-what-is-outstanding).
 
 State: **Agreed** for M2 · [Owner sign-off, 23 November](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7105048143).
 

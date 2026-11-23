@@ -1,25 +1,67 @@
 # 2026-11-23 M2 scoped handover and access
 
-Implements the agreed [memory](specs/memory.md) and [access](specs/permissions.md) contracts in the offline first-line simulator. The M2 entry point reuses the M1 tool reads, evidence gate, executor receipt and recovery check. The memory store retains structured evidence across scripted shifts in one process and builds each view from current source access. The supplied course memory store has a single source field per record. M2 needs multiple independently scoped sources to correct a claim and remove a deleted source without losing retained observations.
+This entry implements part of the agreed [memory](specs/memory.md) and [access](specs/permissions.md) contracts in the offline first-line simulator. The M2 entry point (`first_line/scoped_shift.py`) reuses the M1 tool reads, evidence gate, executor receipt and recovery check. It adds a scoped memory store and a restart dispatcher. The supplied course memory store has one source field per record. M2 needs several independently scoped sources per claim, so that it can correct a claim and drop a deleted source while keeping the other observations. All decisions are scripted. No model was called.
 
-Before implementation, Bubblewrap exposed only a writable tracked archive, the system runtime and a read-only dependency directory. Public A loaded inside it. The host home, external and old checkout reservations, manifest and `.env` were absent. The tests used scripted decisions or local test doubles. There were no live model requests.
+**Isolation.** The isolation check ran inside the development environment before each round of edits. Bubblewrap exposed a writable archive of tracked files, the system runtime and the repository `.venv` read-only at `/venv`. There was no network (loopback only), no host home and no credentials in the environment. Public A loaded. The external evaluator store, the old in-checkout reservation directory, the manifest and `.env` were absent.
 
-| Public run | Observed result |
+## Public runs
+
+`first_line/offline-traces-m2.jsonl` holds 13 records. Cases L and R are new M2 fixtures in `first_line/cases-m2/`. They are kept outside `cases/`, so the M1 demo and graders do not see them.
+
+| Run | Observed result |
 |---|---|
-| A → C | A saves a timed clue after comparing both replicas. C checks both replicas first, then the clue moves both link checks ahead of the ticket read. The hot target differs. Each incident has one approved restart and three healthy post-action samples. |
-| D | Normal replica memory makes the hot-instance clue inapplicable. The shift finds the degraded reference database link, hands it over, and saves a one-handover follow-up note. Zero effects. |
-| Reference correction | The 10:02 latency sample and the 10:05 action log contradict the saved claim. Deleting the action log removes its reference from later views and leaves the timed latency observation. The old advice stays withdrawn. A different team receives neither the private lesson nor its correction. |
-| Denials | Ticket wording does not authorize a healthy critical-instance restart. Revoking the service credential after approval blocks dispatch. Focused tests also cover exact target binding, changed link evidence, elapsed expiry, replay and rollback denial. |
+| A → C | A closes with a clue. The clue cites both timed replica readings and both link reads (`up`), and it names the condition `hot_instance`. In C the clue is shown after the instance read. The scripted driver then reads the links before the ticket. |
+| C without memory | The same case and driver with an empty memory read in the M1 order: instances, tickets, links. The status, target (`order-gateway-1`), receipt, single effect and recovery samples are identical to C with memory. Only the read order differs. |
+| D, then the next shift of INC-4300 | Normal replica memory leaves the clue inapplicable. D hands over the degraded reference-db link. Its note says: "Read the reference-db link again: check_link reported degraded at tick 20", and it cites that read. The next shift continues the same simulator as `INC-4300/shift-2`. It receives the note, reads the links first, and writes a fresh note. A later lookup no longer returns the first note. Neither shift has an effect. |
+| R: correction during a shift | Shift 1 of INC-4400 restarts the hot replica at 10:16 and records three healthy samples. The outgoing on-call then saves a reported claim: "Restarting the gateway fixed the delay." Shift 2 continues the same simulator. Before its first decision it reads the latency history with one traced `read_metrics` call. Latency fell from 365 to 181 ms at 10:07, when the link fault cleared. Code compares that time with the recorded restart receipt and withdraws the claim. Every decision context in shift 2 carries the correction. The claim is never shown, a direct lookup returns nothing, and there is no restart. The operator then deletes the receipt. The correction keeps the 10:07 observation and says the order of events is no longer established. Another team sees neither the claim nor the correction. |
+| L: link degrades after the grant | The on-call grant is at tick 22. The dispatch-time reads at ticks 23–25 show reference-db `degraded` (`check_link/reference-db/24`). Dispatch is refused with `refresh_evidence`, and there is no effect. |
+| Denials | Ticket wording does not authorize a restart of `matching-engine-1`: the target is outside scope, and no approval is requested. A credential revoked after the grant blocks dispatch before any read. |
 
-From the repository root in the installed course environment:
+**Read order.** The order changes because the scripted driver reacts to a shown clue or note. This shows that applicable memory reaches the decision context and that inapplicable memory does not. It is not evidence about model behaviour. The outcome in C is the same with and without memory.
+
+**Dispatch.** The base workflow asks for approval only after its own evidence gate passes. The executor boundary then works as follows:
+
+1. Check rights, scope and the exact grant.
+2. Take three fresh traced reads. One `read_metrics` call returns every replica, followed by both `check_link` calls.
+3. Require exactly one hot running replica, which must be the target, with a current sample, a 2.4-series version and both links up.
+4. Check rights and the grant again at the tick when the executor would act.
+
+The decision records the source references and both ticks. In A, the grant is at tick 22, the reads are at ticks 23–25 and dispatch is at tick 26. That is inside the five-tick window, which ends at tick 27. A fourth read would expire the grant, so the critical flag is not read again. Scope uses this shift's traced `deployments.get_service` record from tick 16. Access decisions use the authenticated principals, the approval ledger, the simulated clock and traced tool results. They do not read the simulator's world state.
+
+**Shift records.** Source and lesson IDs include the shift, for example `INC-4300/shift-2/check_link/reference-db/23`. A second shift of the same incident cannot collide with the first or replace its records, even in a fresh simulator with the same ticks. Closing a shift again changes nothing. A conflicting record is rejected and never overwritten. If saving fails, the report and any receipt are still returned with `memory_error`.
+
+## What is integrated, what is library-only, and what is outstanding
+
+| | Contract rules |
+|---|---|
+| Integrated in the shift flow (traced) | Requester and source-access filtering before each decision; condition fit; ranking; clue at close with timed sources and a condition; shift note for one handover or 24 hours; correction of a restart claim from traced latency and a recorded receipt, before the next decision; restart identity as the intersection of requester, role and credential; the approval bound to requester, approver, incident, action, target and key; expiry checked after the dispatch reads; single use; fresh evidence at dispatch; ticket text kept out of decision context and the tool trace. |
+| Library calls shown in traces | Operator deletion and its effect on later views; another team's views. These run between shifts, as in the reference incident. |
+| Library-only, unit-tested | Procedure proposal (two independent incidents), operator approval and revocation, published editions for another team, clue review after seven days, reader changes. |
+| Outstanding | Persistence beyond one process; model behaviour; the operator handoff when a `possible_conflict` blocks a live decision (conflicts are flagged only); personal-data masking beyond removing ticket text (the synthetic fixtures contain no personal data); re-reading the critical flag at dispatch; rollback (deferred by the contract). |
+
+Issue coverage. #14: provenance, scoped retrieval, applicability, correction and deletion are integrated or traced. Conflicts are flagged only. Retained lessons cite recorded tool evidence. Recurrence (A → C) and changed conditions (D) use public cases. The reference correction values (10:02 and 10:05) are covered by a library-level test. R repeats the pattern inside the shift flow. #15: identity and approvals are enforced in code. Injected ticket text is dropped. Denials and isolation are shown. The traces use synthetic identifiers and contain no secrets.
+
+**Open question (recorded, not agreed).** What counts as the start of a recovery? The current rule is code: the first latency sample at or below 90% of the sample before it. In R this is 365 → 181 ms at 10:07. The reference fixture's 880 → 740 ms at 10:02 also meets it (84%). A slow, steady decline would not.
+
+**Changes after the [independent review](https://github.com/jpboliv/meridian-project/pull/36#issuecomment-7106243142).**
+
+1. Dispatch no longer reads hidden simulator state. It takes fresh traced reads after the grant, because the contract requires fresh evidence immediately before dispatch.
+2. Shift-scoped IDs and an idempotent close prevent collisions between two shifts of the same incident, and a failed save after an effect no longer loses the report.
+3. A clue now needs exactly one hot replica and cites the link reads. Its link advice is therefore grounded in the cited evidence.
+4. The claim check runs at shift start, because the contract requires correction as soon as the evidence arrives.
+
+## Reproduce
+
+From the repository root, in the installed course environment:
 
 ```sh
-PYTHONPATH=. python projects/course-02-agentic-ai/first_line/m2_demo.py > /tmp/meridian-m2.jsonl
-cmp /tmp/meridian-m2.jsonl projects/course-02-agentic-ai/first_line/offline-traces-m2.jsonl
-PYTHONPATH=. python -m pytest -q meridian/tests projects/course-02-agentic-ai/first_line/test_{case_checks,lab,scoped,shift}.py -k 'not test_provider_decision_cannot_restart_without_source_evidence'
+PYTHONPATH=. python -m pytest -q meridian/tests projects/course-02-agentic-ai/first_line
+cd projects/course-02-agentic-ai/first_line
+PYTHONPATH=../../.. python m2_demo.py | cmp - offline-traces-m2.jsonl
+PYTHONPATH=../../.. python demo.py | cmp - offline-traces-m1.7.jsonl
 ```
 
-The focused regression passed 66 tests. The five M1 scripted traces reproduced byte for byte. The full regression timed out in an unchanged mocked-provider test in the isolated shell, so the 66-test result covers the simulator, graders, lab, M2 and scripted first-line paths. The M2 entry point uses synthetic principals, a process-local memory and approval ledger, and the existing 2.4-series gateway workflow. The scripted sequence establishes runtime policy behavior. Distributed persistence and model behavior are untested.
+Results in the isolated environment: 176 tests passed, and the M2 trace reproduced. The five M1 (`gateway-m1.7`) traces matched byte for byte, because `shift.py` is unchanged. The memory store and approval ledger are process-local.
 
 # Experiment log
 

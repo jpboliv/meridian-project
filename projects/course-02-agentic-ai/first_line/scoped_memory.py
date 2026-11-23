@@ -49,8 +49,17 @@ class ScopedMemory:
         self.withdrawn = {}
         self.approved = {}
         self.deletions = []
+        self.shifts = {}
+
+    def open_shift(self, incident):
+        """A workspace-unique shift ID. Two shifts of one incident never share source or lesson IDs."""
+        self.shifts[incident] = self.shifts.get(incident, 0) + 1
+        return f"{incident}/shift-{self.shifts[incident]}"
 
     def record(self, source):
+        """Add one source. Repeating an identical record is a no-op; a different record never replaces it."""
+        if self.sources.get(source.id) == source:
+            return
         if source.id in self.sources or any(row["id"] == source.id for row in self.deletions):
             raise ValueError("Source IDs cannot be reused")
         self.sources[source.id] = source
@@ -67,6 +76,8 @@ class ScopedMemory:
             raise ValueError("Lesson needs scoped, dated evidence and a condition")
         if lesson.kind == "procedure" and len({s.incident for s in sources}) < 2:
             raise ValueError("Procedure proposal needs two independent incidents")
+        if self.lessons.get(lesson.id) == lesson:
+            return
         if lesson.id in self.lessons:
             raise ValueError("Use a new lesson ID for a new edition")
         self.lessons[lesson.id] = lesson
@@ -107,6 +118,17 @@ class ScopedMemory:
                 or now < lesson.reviewed):
             raise ValueError("Review requires accessible evidence and current conditions")
         self.lessons[lesson_id] = replace(lesson, reviewed=now)
+
+    def claims(self, principal, incident):
+        """Unwithdrawn team claims that a restart started recovery in `incident`."""
+        return [key for key, lesson in self.lessons.items()
+                if lesson.team == principal.team and lesson.condition == "restart_started_recovery"
+                and key not in self.withdrawn
+                and incident in {s.incident for s in self.evidence(principal, lesson.sources)}]
+
+    def incident_sources(self, principal, incident, fact):
+        return [key for key, source in self.sources.items()
+                if source.incident == incident and source.fact == fact and principal.id in source.readers]
 
     def assess_restart_claim(self, principal, lesson_id, refs, now):
         """Classify the reference claim that a restart started latency recovery."""
@@ -179,6 +201,8 @@ class ScopedMemory:
         latest = max(s.observed for s in sources)
         return {"id": lesson.id, "component": lesson.component, "text": lesson.text,
                 "condition": lesson.condition, "fit": fit, "sources": [s.id for s in sources],
+                "evidence": [{"id": s.id, "kind": s.kind, "fact": s.fact, "value": s.value,
+                              "observed": s.observed.isoformat()} for s in sources],
                 "age_seconds": int((now - latest).total_seconds()), "kind": lesson.kind,
                 "uncertainty": "Verify the condition with current evidence."}
 
