@@ -1,3 +1,26 @@
+# 2026-11-23 M2 scoped handover and access
+
+Implements the agreed [memory](specs/memory.md) and [access](specs/permissions.md) contracts in the offline first-line simulator. The M2 entry point reuses the M1 tool reads, evidence gate, executor receipt and recovery check. The memory store retains structured evidence across scripted shifts in one process and builds each view from current source access. The supplied course memory store has a single source field per record. M2 needs multiple independently scoped sources to correct a claim and remove a deleted source without losing retained observations.
+
+Before implementation, Bubblewrap exposed only a writable tracked archive, the system runtime and a read-only dependency directory. Public A loaded inside it. The host home, external and old checkout reservations, manifest and `.env` were absent. The tests used scripted decisions or local test doubles. There were no live model requests.
+
+| Public run | Observed result |
+|---|---|
+| A → C | A saves a timed clue after comparing both replicas. C checks both replicas first, then the clue moves both link checks ahead of the ticket read. The hot target differs. Each incident has one approved restart and three healthy post-action samples. |
+| D | Normal replica memory makes the hot-instance clue inapplicable. The shift finds the degraded reference database link, hands it over, and saves a one-handover follow-up note. Zero effects. |
+| Reference correction | The 10:02 latency sample and the 10:05 action log contradict the saved claim. Deleting the action log removes its reference from later views and leaves the timed latency observation. The old advice stays withdrawn. A different team receives neither the private lesson nor its correction. |
+| Denials | Ticket wording does not authorize a healthy critical-instance restart. Revoking the service credential after approval blocks dispatch. Focused tests also cover exact target binding, changed link evidence, elapsed expiry, replay and rollback denial. |
+
+From the repository root in the installed course environment:
+
+```sh
+PYTHONPATH=. python projects/course-02-agentic-ai/first_line/m2_demo.py > /tmp/meridian-m2.jsonl
+cmp /tmp/meridian-m2.jsonl projects/course-02-agentic-ai/first_line/offline-traces-m2.jsonl
+PYTHONPATH=. python -m pytest -q meridian/tests projects/course-02-agentic-ai/first_line/test_{case_checks,lab,scoped,shift}.py -k 'not test_provider_decision_cannot_restart_without_source_evidence'
+```
+
+The focused regression passed 66 tests. The five M1 scripted traces reproduced byte for byte. The full regression timed out in an unchanged mocked-provider test in the isolated shell, so the 66-test result covers the simulator, graders, lab, M2 and scripted first-line paths. The M2 entry point uses synthetic principals, a process-local memory and approval ledger, and the existing 2.4-series gateway workflow. The scripted sequence establishes runtime policy behavior. Distributed persistence and model behavior are untested.
+
 # Experiment log
 
 Proposed first simulator comparison: run the recurrence with and without a prior shift record. Does recall reduce investigation effort without a wrong-target restart?

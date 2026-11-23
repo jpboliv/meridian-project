@@ -1,5 +1,7 @@
 # Memory lifecycle
 
+Implementation state: **Implemented** in the offline first-line workflow. See the [public cases, traces, and checks](../experiments.md#2026-11-23-m2-scoped-handover-and-access).
+
 State: **Agreed** for M2 · [Owner sign-off, 23 November](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7105048143).
 
 ![Proposed flow](../flows/memory.svg)
