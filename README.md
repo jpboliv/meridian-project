@@ -2,7 +2,7 @@
 
 How can an on-call agent use yesterday's incident to investigate faster without mistaking it for today's evidence?
 
-Start with the [presentation report for Luís](projects/course-02-agentic-ai/docs/relatorio.md), in Portuguese. To check the M1 snapshot yourself, follow its [verification route](projects/course-02-agentic-ai/docs/relatorio.md#verificar-no-seu-computador); it needs no `.env`, API key or paid run. The [project guide](projects/course-02-agentic-ai/README.md) explains how to run the offline lab and links to the detailed specifications.
+Start with the [presentation report for Luís](projects/course-02-agentic-ai/docs/relatorio.md), in Portuguese. To check the M1 snapshot yourself, follow its [verification route](projects/course-02-agentic-ai/docs/relatorio.md#verificar-no-seu-computador); it needs no `.env`, API key or paid run. If you received the `Meridian-M1` ZIP instead of repository access, open `Meridian-M1/LEIA-ME.txt` and follow the same route from the extracted folder. The [project guide](projects/course-02-agentic-ai/README.md) explains how to run the offline lab and links to the detailed specifications.
 
 The private [meridian-project repository](https://github.com/jpboliv/meridian-project) holds the code, [issues](https://github.com/jpboliv/meridian-project/issues), and [milestone reviews](https://github.com/jpboliv/meridian-project/milestones). See the [roadmap](ROADMAP.md) and [current focus](STATUS.md) for the milestone plan.
 

@@ -73,7 +73,7 @@ flowchart LR
 
 **Sem modelo.** Os [registos programados](../first_line/offline-traces-m1.7.jsonl) dão os mesmos resultados de `gateway-m1.6` e `gateway-m1.5`, exceto a revisão e o hash.
 
-**Modelo real.** A [linha de base](experiments.md#2026-11-22-public-m1-baseline-gateway-m16) correu a 22 de novembro de 2026, com o modelo `gpt-6-luna` e a revisão `gateway-m1.6` do código (fonte `510c594`, semente 11). Teve três rondas de A a E, até 6 pedidos e 512 tokens de saída por pedido. Foram enviados 66 pedidos, e outros 4 foram recusados localmente no limite. Usaram 38 375 tokens de entrada e 7 436 de saída, sem leituras nem escritas na cache. O custo estimado é 0,0075555 USD ao [preço padrão público](https://developers.openai.com/api/docs/models/gpt-6-luna#pricing), não uma fatura. Três execuções por caso não estabelecem uma taxa de sucesso.
+**Modelo real.** A [linha de base](experiments.md#2026-11-22-public-m1-baseline-gateway-m16) correu a 22 de novembro de 2026, com o modelo `gpt-6-luna` e a revisão `gateway-m1.6` do código (fonte `510c594`, semente 11). Teve três rondas de A a E, até 6 pedidos e 512 tokens de saída por pedido. Foram enviados 66 pedidos, e outros 4 foram recusados localmente no limite. Usaram 38 375 tokens de entrada e 7 436 de saída, sem leituras nem escritas na cache. O custo estimado é 0,0075555 USD ao [preço padrão público](https://developers.openai.com/api/docs/models/gpt-6-luna#pricing), não uma fatura. Três execuções por caso não estabelecem uma taxa de sucesso. A2 e D3 designam a segunda ronda de A e a terceira de D; a execução *n* é a linha *n* do [ficheiro JSONL](../first_line/live-baseline-m1.6-2026-11-22.jsonl).
 
 As seis falhas pararam sem efeitos, mas uma paragem controlada e incompleta pode ainda falhar o caso. Na [execução 5](../first_line/live-baseline-m1.6-2026-11-22.jsonl#L5) (E), o modelo escolheu três vezes ler as ligações, que mostravam a reference-db degradada, mas nunca escolheu passá-la ao operador. Ao atingir o limite, o código fez uma passagem genérica. Falhou só uma das 11 verificações, `fresh independent link cited for investigation`. As outras falhas estão descritas no [registo da linha de base](experiments.md#2026-11-22-public-m1-baseline-gateway-m16). Os dois pilotos anteriores do caso B, um por revisão, são [históricos](experiments.md#2026-11-21-live-pilot-case-b) e ficam fora da linha de base.
 
@@ -83,7 +83,7 @@ As seis falhas pararam sem efeitos, mas uma paragem controlada e incompleta pode
 - as de D3 só passam porque o teste fornece um alvo reparado válido;
 - as de A2 continuam a falhar (passaram 7 de 12 verificações).
 
-Os 512 tokens de saída, por si só, não explicam a falha de A3, cuja causa continua desconhecida. Nada disto é um resultado do modelo; `gateway-m1.7` ainda não correu com o modelo real.
+Em A3 ([execução 11](../first_line/live-baseline-m1.6-2026-11-22.jsonl#L11)), a quarta resposta reportou 512 tokens de saída, o limite por pedido. Isso não prova que a resposta tenha sido cortada, e a causa final da falha continua desconhecida. Nada disto é um resultado do modelo; `gateway-m1.7` ainda não correu com o modelo real.
 
 ## Concluído e planeado
 
@@ -101,9 +101,21 @@ O ensaio completo a partir de um clone limpo (sucesso, falha controlada e retoma
 
 ## Verificar no seu computador
 
-**Precisa de:** acesso de leitura autorizado ao repositório privado, Git, [uv](https://docs.astral.sh/uv/getting-started/installation/) e uma shell POSIX (bash ou zsh). A Internet só é necessária no passo 1, para clonar e descarregar as dependências. **Não precisa de** `.env`, chave de API, serviços alojados, ficheiros do formador nem execuções pagas.
+Há dois caminhos: o ZIP `Meridian-M1`, recebido diretamente, ou um clone Git do repositório privado. O ZIP cobre todo o percurso de revisão do M1; as ligações para o tracker e o histórico privados são opcionais.
 
-**1. Preparar.** Numa pasta nova, que vai conter o clone:
+**Precisa de:** [uv](https://docs.astral.sh/uv/getting-started/installation/) e uma shell POSIX (bash ou zsh). Para o clone, também Git e acesso de leitura autorizado e autenticado ao repositório privado; basta o gestor de credenciais do Git ou o início de sessão habitual da organização. A Internet só é necessária no passo 1, para descarregar as dependências e, no clone, para clonar; a análise corre sem rede. **Não precisa de** `.env`, chave de API, serviços alojados, ficheiros do formador nem execuções pagas. Com o ZIP, também não precisa de conta GitHub, acesso ao repositório nem chave do projeto.
+
+**Ambiente verificado:** Linux, Python 3.14.8 e uv 0.13.9. Outros ambientes não foram verificados.
+
+**1a. Preparar a partir do ZIP.** Extraia o ZIP. Leia `Meridian-M1/LEIA-ME.txt` ou abra no browser `Meridian-M1/projects/course-02-agentic-ai/docs/relatorio.html`, a versão HTML deste relatório. Abra um terminal na pasta extraída `Meridian-M1`, a que contém `pyproject.toml`, e corra:
+
+```sh
+uv sync --locked --group dev
+```
+
+Passe diretamente ao passo 2; os passos seguintes correm nesta pasta. Os comandos Git e da cópia fixa só se aplicam a um clone Git.
+
+**1b. Preparar a partir de um clone Git.** Numa pasta nova, que vai conter o clone:
 
 ```sh
 git clone https://github.com/jpboliv/meridian-project.git
@@ -191,7 +203,7 @@ Cada linha do ficheiro é uma execução. Para ver o que aconteceu numa delas, c
 
 ## Utilização de IA
 
-Assistentes de IA, incluindo o Claude Code, ajudaram a escrever o código, os testes e estes documentos, com revisão independente. O dono do projeto decide as especificações, as execuções reais e os gastos. Só os dois pilotos do caso B e as 15 execuções da linha de base usaram o `gpt-6-luna`. Fora do agente, a 18 de novembro, cinco execuções só de leitura usaram o `claude-opus-5-5` sobre ficheiros de exemplo, sem o simulador: uma num [estudo](experiments.md#2026-11-18-shortened-restart-handover) e quatro [noutro](experiments.md#2026-11-18-does-the-memory-lesson-change-the-investigation).
+Assistentes de IA, incluindo o Claude Code, ajudaram a escrever o código, os testes e estes documentos. As revisões independentes de código foram feitas por sessões de IA novas, separadas das que escreveram as alterações. O dono do projeto decide as especificações, as execuções reais e os gastos. Só os dois pilotos do caso B e as 15 execuções da linha de base usaram o `gpt-6-luna`. Fora do agente, a 18 de novembro, cinco execuções só de leitura usaram o `claude-opus-5-5` sobre ficheiros de exemplo, sem o simulador: uma num [estudo](experiments.md#2026-11-18-shortened-restart-handover) e quatro [noutro](experiments.md#2026-11-18-does-the-memory-lesson-change-the-investigation).
 
 ## Fontes
 
