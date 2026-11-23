@@ -73,9 +73,9 @@ Run setup from the repository root. Each student should create their own `.venv`
 do not copy or share that folder. `--locked` uses the committed dependency versions
 and reports an error if `uv.lock` needs updating.
 
-Create a local `.env` from `.env.example`, then add your personal API key. Do
-not commit that file. Exercises that call a model need it; the Course 2 project's
-offline lab and tests, and the M1 verification route, do not.
+For exercises that call a model, create a local `.env` from `.env.example`, then
+add your personal API key. Do not commit that file. The M1 verification route
+never needs `.env`.
 
 Run an exercise from the repository root with `uv run`, for example:
 
