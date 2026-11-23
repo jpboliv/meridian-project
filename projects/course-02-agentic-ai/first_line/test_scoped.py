@@ -300,6 +300,9 @@ def test_dispatch_uses_fresh_traced_reads_after_the_grant():
                                              f"check_link/reference-db/{between[1].tick}",
                                              f"check_link/matching-engine/{between[2].tick}"]
     assert record["evidence"]["hot_running"] == ["order-gateway-2"]
+    # The classification is checked at the dispatch tick without a tool call and kept apart from the evidence.
+    assert record["classification"] == {"source": "security.describe_action", "component": GATEWAY,
+                                        "critical": False}
     assert dispatch.tick < grant.tick + scoped_access.GRANT_TICKS
 
 
@@ -367,6 +370,51 @@ def test_failed_dispatch_metrics_read_saves_no_clue():
     assert not memory.lessons
 
 
+def test_failed_dispatch_metrics_and_one_faulty_link_are_reported_together():
+    """#15 follow-up: the handover names the degraded link and the missing replica evidence, and the earlier
+    samples are no longer labelled current."""
+    memory = ScopedMemory()
+    shift = build_shift("A", memory)
+    check_link = shift.tools.check_link
+    broken_after_grant(shift, "read_metrics", lambda *args, **kwargs: {"error": "timeout"})
+    broken_after_grant(shift, "check_link", lambda source, target: {**check_link(source, target), "state": "degraded"}
+                       if target == "reference-db" else check_link(source, target))
+    report = run(shift)
+    record = shift.access.decisions[-1]
+    assert record["reason"] == "no_instance_reading" and not shift.deps.sim.executor.effects()
+    assert record["evidence"]["links"] == {"reference-db": "degraded", "matching-engine": "up"}
+    tick = report["observations"]["links"]["reference-db"]["tick"]
+    grant = next(call for call in shift.tools.trace if call.tool == "request_approval")
+    assert report["follow_up"] == {"operation": "investigate_link", "source": GATEWAY, "target": "reference-db",
+                                   "observed_tick": tick} and tick > grant.tick  # the dispatch-time read
+    step = report["next_step"]
+    assert step.startswith("read_metrics returned no current per-instance reading.")
+    assert "predate that read and do not establish current health" in step
+    assert f"Investigate the degraded link from {GATEWAY} to reference-db. Source: check_link at tick {tick}." in step
+    samples = report["observations"]["instances"]
+    assert samples and {row["freshness"] for row in samples.values()} == {"superseded"}
+    assert not any(key.endswith("/compare") for key in memory.lessons)  # no clue without current readings
+    note, = memory.lessons.values()
+    assert note.kind == "note" and note.sources == (f"{shift.shift_id}/check_link/reference-db/{tick}",)
+
+
+def test_personal_identifiers_in_ticket_text_never_reach_context_trace_memory_or_report():
+    memory = ScopedMemory()
+    shift = build_shift("A", memory)
+    markers = ("jane.doe@example.invalid", "+351 900 000 001")
+    shift.deps.sim.tickets.get("MRX-4100").summary = f"INC-4100: slow acks, call {markers[0]} or {markers[1]}"
+    seen = []
+
+    async def decide(context):
+        seen.append(repr(context))
+        return await investigate(context)
+
+    report = run(shift, decide)
+    assert report["status"] == "recovered" and seen
+    for text in (*seen, repr(shift.tools.trace), repr(memory.sources), repr(memory.lessons), repr(report)):
+        assert not any(marker in text for marker in markers)
+
+
 def test_dispatch_follows_the_tool_result_not_world_state():
     shift = build_shift("A", ScopedMemory())
     check_link = shift.tools.check_link
@@ -403,6 +451,57 @@ def test_rights_revoked_during_dispatch_reads():
     record = shift.access.decisions[-1]
     assert (record["decision"], record["reason"]) == ("permission_denied", "rights_changed_during_reads")
     assert record["evidence"]["sources"] and not shift.deps.sim.executor.effects()
+
+
+@pytest.mark.parametrize("change,reason", [("critical", "target_critical"), ("removed", "target_unverified")])
+def test_target_classification_changed_during_dispatch_reads(change, reason):
+    shift = build_shift("A", ScopedMemory())
+    component, instance = shift.deps.sim.state.instance("order-gateway-2")
+    if change == "critical":
+        interrupt_reads(shift, lambda: setattr(component, "critical", True))
+    else:  # gone after the last dispatch read; the simulator's fault still names it on later ticks
+        check_link = shift.tools.check_link
+
+        def last_read(source, target):
+            result = check_link(source, target)
+            if shift.access.grants and target == "matching-engine":
+                component.instances.remove(instance)
+            return result
+
+        shift.tools.check_link = last_read
+    run(shift)
+    record = shift.access.decisions[-1]
+    assert (record["decision"], record["reason"]) == ("permission_denied", reason)
+    assert record["evidence"]["sources"] and "classification" in record
+    assert shift.deployment["critical"] is False  # the earlier traced record alone would have allowed it
+    assert not shift.deps.sim.executor.effects()
+
+
+@pytest.mark.parametrize("problem,reason", [
+    ("lookup_failed", "target_unverified"),
+    ("unknown_criticality", "target_unverified"),
+    ("wrong_instance", "target_unverified"),
+    ("wrong_component", "target_mismatch"),
+])
+def test_unverifiable_dispatch_classification_fails_closed(monkeypatch, problem, reason):
+    describe_action = scoped_access.describe_action
+
+    def describe(deps, action, target):
+        if problem == "lookup_failed":
+            raise RuntimeError("authorization lookup failed")
+        request = describe_action(deps, action, target)
+        changes = {"unknown_criticality": {"critical": None},
+                   "wrong_instance": {"target": "order-gateway-1"},
+                   "wrong_component": {"component": "matching-engine"}}
+        return replace(request, **changes[problem])
+
+    monkeypatch.setattr(scoped_access, "describe_action", describe)
+    shift = build_shift("A", ScopedMemory())
+    run(shift)
+    record = shift.access.decisions[-1]
+    assert (record["decision"], record["reason"]) == ("permission_denied", reason)
+    assert len(record["evidence"]["sources"]) == 3
+    assert not shift.access.spent and not shift.deps.sim.executor.effects()
 
 
 def test_grant_expiring_while_reading_blocks_dispatch():

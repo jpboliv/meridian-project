@@ -107,6 +107,8 @@ class ScopedShift(Shift):
             self.last_read_tick["instances"] = read_tick
         else:  # earlier instance samples stay as history, but no longer count as the current reading
             self.observations["missing"] = "read_metrics returned no current per-instance reading"
+            for sample in self.observations.get("instances", {}).values():
+                sample["freshness"] = "superseded"
         links = {}
         for name in LINKS:
             link = self.tools.check_link(GATEWAY, name)
@@ -147,11 +149,19 @@ class ScopedShift(Shift):
             if decision == "approval_required":
                 return self.handover("Ask for a new on-call grant for the current target.")
             if decision == "refresh_evidence":
-                faulty = self.faulty_links()
-                if len(faulty) == 1 and "missing_link" not in self.observations:
-                    return self.link_handover(faulty[0])
                 unknown = "".join(f"{self.observations[key]}. " for key in ("missing", "missing_link")
                                   if key in self.observations)
+                superseded = sorted({row["time"] for row in self.observations.get("instances", {}).values()
+                                     if row["freshness"] == "superseded"})
+                if superseded:
+                    unknown += (f"Gateway samples from {', '.join(superseded)} predate that read and do not "
+                                f"establish current health. ")
+                faulty = self.faulty_links()
+                if len(faulty) == 1 and "missing_link" not in self.observations:
+                    # Name the observed faulty link together with any missing replica evidence.
+                    report = self.link_handover(faulty[0])
+                    report["next_step"] = unknown + report["next_step"]
+                    return report
                 return self.handover(f"{unknown}Refresh gateway instance readings and dependency links.")
         return report
 
