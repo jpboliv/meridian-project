@@ -1,6 +1,6 @@
 # Permissions and approvals
 
-Implementation state: partial and offline, on `m2/scoped-handover-access` (PR #36, not merged). The offline shift flow enforces identity, scope, a single-use approval and fresh traced evidence at dispatch. Personal-data masking beyond removing ticket text and re-reading the critical flag at dispatch are outstanding. Rollback stays deferred. See [what is integrated](../experiments.md#what-is-integrated-what-is-library-only-and-what-is-outstanding).
+Implementation state: partial and offline, merged in PR #36 at `34ab7b8`. The offline shift flow enforces identity, scope, a single-use approval and fresh traced evidence at dispatch. Ticket text, the only free-text source in M2, is reduced to its key, time and incident before use. A test shows that synthetic personal identifiers in a ticket never reach the context, trace, memory or report. When the dispatch metrics read fails and one link is faulty, the handover names both. Re-reading the critical flag at dispatch is blocked by the five-tick grant window ([#17 audit](../experiments.md#14-and-15-audit)). Rollback stays deferred. See [what is integrated](../experiments.md#what-is-integrated-what-is-library-only-and-what-is-outstanding).
 
 State: **Agreed** for M2 · [Owner sign-off, 23 November](https://github.com/jpboliv/meridian-project/issues/9#issuecomment-7105048144).
 

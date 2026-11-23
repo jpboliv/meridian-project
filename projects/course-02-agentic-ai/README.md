@@ -57,6 +57,16 @@ The [experiment log](docs/experiments.md#context-reuse-arms-prepared-offline) is
 
 The model chooses reads and proposes an action. Code controls the approval, dispatch, and recovery report. Code also ends the reads when a refresh of stale samples brings nothing new. It then uses link evidence from after that refresh (the model's own link read if the stalled step was `links`, otherwise one new link-monitor read that replaces any earlier one) and writes the sourced handover or names the unresolved evidence, marked `stale_evidence` in the report. A failed new link read cites no link. Only the evaluator reads `first_line/checks/`. Cases A, C, and D form the three-shift story. B has missing readings; in [E the monitor answers with old readings](docs/experiments.md#case-e-the-healthy-but-stale-monitor). Each starts without memory. A live run records provider-reported cache usage, but one run is not a reuse comparison. These runs do not measure cross-shift recall or worker replacement.
 
+## Run the M2 handover comparison (#17)
+
+[#17](https://github.com/jpboliv/meridian-project/issues/17) compares the full v2 runbook alone with the same runbook plus a sourced reminder, on public C and D. Both arms use the M2 scoped shift with the same identity, prompt, limits and a fresh simulator. Only memory differs. The reminder arm first replays a fixed scripted A shift, with no model, whose close saves the reminder. The agreed applicability rule then decides at each decision whether the reminder is shown. Each record says whether it was stored, shown or filtered, and why. From the repository root:
+
+```sh
+uv run --locked python projects/course-02-agentic-ai/first_line/handover_study.py
+```
+
+With no options, the command runs the 12-slot plan with scripted decisions, the acceptance controls and a summary. The output matches [`offline-study-m2.jsonl`](first_line/offline-study-m2.jsonl). Use `--plan` to print the slot plan and `--slot N` to run one slot. `--live --slot N --max-requests R --max-output-tokens T` runs exactly one planned slot with the model named by `OPENAI_MODEL`. It is a paid run under the same bounds as the single-case pilot, and the owner must authorize its settings and spending first. `--summarize FILE...` grades saved slot records against the plan. It lists unrun slots, failures, cap stops, cache counts and memory costs, and it never replaces a recorded slot. The [experiment log](docs/experiments.md#2026-11-23-m2-handover-comparison-prepared-offline) has the design, the offline results and the limits.
+
 ## Run one case in the lab
 
 From the repository root, with no API key:

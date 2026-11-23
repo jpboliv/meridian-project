@@ -367,6 +367,51 @@ def test_failed_dispatch_metrics_read_saves_no_clue():
     assert not memory.lessons
 
 
+def test_failed_dispatch_metrics_and_one_faulty_link_are_reported_together():
+    """#15 follow-up: the handover names the degraded link and the missing replica evidence, and the earlier
+    samples are no longer labelled current."""
+    memory = ScopedMemory()
+    shift = build_shift("A", memory)
+    check_link = shift.tools.check_link
+    broken_after_grant(shift, "read_metrics", lambda *args, **kwargs: {"error": "timeout"})
+    broken_after_grant(shift, "check_link", lambda source, target: {**check_link(source, target), "state": "degraded"}
+                       if target == "reference-db" else check_link(source, target))
+    report = run(shift)
+    record = shift.access.decisions[-1]
+    assert record["reason"] == "no_instance_reading" and not shift.deps.sim.executor.effects()
+    assert record["evidence"]["links"] == {"reference-db": "degraded", "matching-engine": "up"}
+    tick = report["observations"]["links"]["reference-db"]["tick"]
+    grant = next(call for call in shift.tools.trace if call.tool == "request_approval")
+    assert report["follow_up"] == {"operation": "investigate_link", "source": GATEWAY, "target": "reference-db",
+                                   "observed_tick": tick} and tick > grant.tick  # the dispatch-time read
+    step = report["next_step"]
+    assert step.startswith("read_metrics returned no current per-instance reading.")
+    assert "predate that read and do not establish current health" in step
+    assert f"Investigate the degraded link from {GATEWAY} to reference-db. Source: check_link at tick {tick}." in step
+    samples = report["observations"]["instances"]
+    assert samples and {row["freshness"] for row in samples.values()} == {"superseded"}
+    assert not any(key.endswith("/compare") for key in memory.lessons)  # no clue without current readings
+    note, = memory.lessons.values()
+    assert note.kind == "note" and note.sources == (f"{shift.shift_id}/check_link/reference-db/{tick}",)
+
+
+def test_personal_identifiers_in_ticket_text_never_reach_context_trace_memory_or_report():
+    memory = ScopedMemory()
+    shift = build_shift("A", memory)
+    markers = ("jane.doe@example.invalid", "+351 900 000 001")
+    shift.deps.sim.tickets.get("MRX-4100").summary = f"INC-4100: slow acks, call {markers[0]} or {markers[1]}"
+    seen = []
+
+    async def decide(context):
+        seen.append(repr(context))
+        return await investigate(context)
+
+    report = run(shift, decide)
+    assert report["status"] == "recovered" and seen
+    for text in (*seen, repr(shift.tools.trace), repr(memory.sources), repr(memory.lessons), repr(report)):
+        assert not any(marker in text for marker in markers)
+
+
 def test_dispatch_follows_the_tool_result_not_world_state():
     shift = build_shift("A", ScopedMemory())
     check_link = shift.tools.check_link

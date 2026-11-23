@@ -1,3 +1,120 @@
+# 2026-11-23 M2 handover comparison, prepared offline
+
+[#17](https://github.com/jpboliv/meridian-project/issues/17). Question: when both versions get the full v2 runbook, does a sourced reminder from an earlier shift change the reads needed for a verified decision? This entry prepares that comparison and records its offline controls. No model was called, and no live run, key or spending was used. Live settings and spending need separate owner decisions.
+
+**Is this necessary?** #17 needs a paired comparison with fresh controls and separate correction scores. The runner is one module, `first_line/handover_study.py`. It reuses the M2 scoped shift, the M2 identities, the bounded `Pilot` caller and the public C and D graders. It adds no new tools, cases or prompt text.
+
+**Isolation.** Checked from inside the development environment before any edit. Bubblewrap exposed a writable archive of the tracked files at `c4fe23e`, the system runtime and the repository `.venv` read-only at `/venv`. The environment had no host home, no network (loopback only) and no credential variables. Public A loaded. The host home, both evaluator-store locations, the reservation manifest, `/work/.env`, `private/` and `runs/` were absent. All development and tests ran there, and the diff was copied back.
+
+## Design
+
+| | Runbook arm | Reminder arm |
+|---|---|---|
+| Memory at the start of C or D | Empty | The store after the fixed public A setup |
+| Everything else | Same | Same |
+
+**The reminder.** The fixed public A setup runs one scripted A shift, with no model, in its own fresh simulator. At close it saves the clue `INC-4100/shift-1/compare`: "Compare current per-instance readings and read both dependency links before a restart decision. Cited: order-gateway-2 above 90% memory; links reference-db up, matching-engine up." The clue cites four traced reads from ticks 23–25 on 4 November. Before any model request, the runner checks the reminder's text, condition and evidence against the SHA-256 `6719e04a…b829b70`. A mismatch stops the slot with no request.
+
+**Held fixed.** Each slot gets a fresh C or D simulator (seed 11) and the same requester, approver, credential and first-line identity. The decision instructions, context key order and limits are the same, and every request carries the full v2 runbook (626 characters). The eight-decision ceiling, the approval rules and the graders are also unchanged. The harness has no application cache, and each record says `"application_cache": "off"`. Provider prompt caching stays at its default with no `--reuse-arm`. Reported cache reads and writes are recorded. The graders read `checks/` only after the shift ends.
+
+**Exposure.** The agreed applicability rule decides at every decision whether the reminder is shown. Each decision records whether the reminder was stored and shown and, if not, why. It also records the context size, the reminder's bytes and a digest of the context without the reminder. The reminder's condition is `hot_instance`, so it can appear only after a current per-instance read shows one hot replica.
+
+**Slot plan** (`--plan`). Twelve slots: three pairs of C and D, each with both arms once. The arm that goes first alternates, so each arm goes first in three of the six pairs.
+
+| Pair | C order (slots) | D order (slots) |
+|---|---|---|
+| 1 | runbook, reminder (1, 2) | reminder, runbook (3, 4) |
+| 2 | reminder, runbook (5, 6) | runbook, reminder (7, 8) |
+| 3 | runbook, reminder (9, 10) | reminder, runbook (11, 12) |
+
+## Offline results
+
+[`first_line/offline-study-m2.jsonl`](../first_line/offline-study-m2.jsonl) holds the plan, 12 scripted slot records, three acceptance controls and the summary. The scripted driver (`m2_demo.investigate`) reads links before the ticket when the reminder is shown. It shows the mechanism, not model behaviour. All three pairs of each case are identical.
+
+| Case | Arm | Reads chosen | Reads before the decision | Reminder shown | Reminder bytes sent | Result |
+|---|---|---|---:|---|---:|---|
+| C | runbook | instances, tickets, links, then restart `order-gateway-1` | 6 | 0 of 4 decisions | 0 | Pass, 13/13 checks |
+| C | reminder | instances, links, tickets, then restart `order-gateway-1` | 6 | 3 of 4: not at the first decision ("no current per-instance readings") | 3,672 | Pass, 13/13 |
+| D | runbook | instances, tickets, links, then hand over reference-db | 6 | 0 of 4 | 0 | Pass, 11/11 |
+| D | reminder | Same as the runbook arm | 6 | 0 of 4: stored and checked at every decision, then filtered ("`hot_instance` not met by current readings") | 0 | Pass, 11/11 |
+
+"Reads before the decision" counts tool calls before the approval request, or before the handover, excluding the runbook read. The summary gives both cases "keep the runbook alone: tie or mixed evidence": 3/3 passes in each arm, no regressions and no pair with fewer reads. The D comparison is honest about its limit: the reminder was in the store but never reached the model, so a D pair can show only run-to-run variation.
+
+**Mocked request equivalence** (`test_handover_study.py`). The same four fixed decisions per case go through `Pilot` to a mock Responses transport. Each arm sent four requests, and the A setup sent none. Outside the user message, the request bodies matched: instructions, tools, `max_output_tokens` and no cache options. Every user message carried the full v2 runbook. In C, three of the four user messages differed, and only by the reminder entry in `handover`. With that entry removed they were identical, and the entry matched the setup reminder's text and sources. In D the requests were byte-identical across arms. When shown, the reminder adds 1,224 bytes per decision: the C user JSON grew from 1,356–1,589 bytes to 2,580–2,813 bytes.
+
+## Acceptance evidence
+
+| Topic | Offline evidence |
+|---|---|
+| Repeated incident | A, then C (table above). The reminder names A's hot replica, `order-gateway-2`. C restarts `order-gateway-1` from its own readings in both arms. |
+| Changed facts | D (table above). The reminder is filtered at every decision. Neither arm restarts, and both hand over the degraded reference-db link. |
+| Conflict and correction (R), scored separately | **Stored correction: 5/5.** The temporal claim is withdrawn with a time, a reason and sources. The correction cites the fall before the recorded restart. The original claims are kept unchanged. The causal claim is flagged, not withdrawn, and lookup and search return neither claim as advice. **Next shift: 4/4.** The correction and the flag are in the first decision's context. Neither claim is in any handover list. Current instance and link readings come before the final decision, and no restart is requested. A negative control disables the claim check: storage then fails, and the next shift receives no correction, but its behaviour still has no restart. The two scores therefore measure different things. |
+| Deletion | An operator deletes one reading that the reminder cites, before C. The lesson is removed, and lookup, search and handover return nothing. C then runs like the runbook arm and passes. After the R receipt is deleted, both claims keep their status, and the views say that the order of events is no longer established. |
+| Cross-team isolation | A `settlement-ops` requester using the same store gets nothing from search, lookup or handover. Its gateway shift is denied before any read or decision. The owning team still sees the reminder. |
+
+**Memory maintenance cost.** Store operations come from a counting subclass of the scoped store (`MeteredMemory`). Search and handover also count one nested lookup per stored lesson.
+
+| Work | Sources written | Lessons saved | Searches | Lookups | Other |
+|---|---:|---:|---:|---:|---|
+| A setup, reminder arm only | 5 | 1 | 5 | 0 | 1 handover delivery; 15 tool calls, no model |
+| C shift, either arm | 5 | 1 | 5 | 0 (runbook), 5 (reminder) | Reminder arm: 3,672 bytes of reminder sent |
+| D shift, either arm | 4 | 1 | 5 | 0 (runbook), 5 (reminder) | Reminder filtered, 0 bytes |
+| R, claims saved | 1 | 2 | 0 | 0 | |
+| R, next shift | 9 | 0 | 5 | 15 | 2 claim checks; 1 traced read before the shift (`read_metrics`) |
+| R, receipt deleted | 0 | 0 | 0 | 0 | 1 deletion |
+| 12 slots, runbook arm | 27 | 6 | 30 | 0 | |
+| 12 slots, reminder arm | 57 | 12 | 60 | 30 | 11,016 reminder bytes in total |
+
+Provider tokens, cache counts and cost are zero offline because no client was built. Live records keep them separately for each request.
+
+## Running the live comparison (not authorized)
+
+```sh
+uv run --locked python projects/course-02-agentic-ai/first_line/handover_study.py --plan
+uv run --locked python projects/course-02-agentic-ai/first_line/handover_study.py --live --slot N \
+  --max-requests "$MAX_REQUESTS" --max-output-tokens "$MAX_OUTPUT_TOKENS" >> "$RUN_DIR/slots.jsonl"
+uv run --locked python projects/course-02-agentic-ai/first_line/handover_study.py --summarize "$RUN_DIR/slots.jsonl"
+```
+
+`--live` runs exactly one planned slot, one case and one arm, and needs `--slot` and both limits. The command is checked before the key is loaded. The model comes from `OPENAI_MODEL`, with no fallback, and the bounds are the same as for the [single-case pilot](../README.md#one-bounded-live-case). A request-cap stop is kept and graded as an attempt. A harness error is kept as an `execution_failure`, with the exception type only. `--summarize` grades saved records against the plan. It rejects a record that does not match its planned slot and a repeat of a recorded slot, and the first record stands. Missing slots stay unrun. Per slot it reports cap stops, model failures, requests, tokens, cache reads and writes, reminder exposure, requested restart targets and memory costs. Unknown usage stays unknown, and a total with any unknown part is unknown. The verdict follows the [agreed decision rule](specs/evaluation.md#draft-what-counts-as-a-pass). An adoption blocker in the reminder arm rejects it. Fewer verified passes keeps the runbook alone. Otherwise the reminder needs more passes, or fewer reads or tokens at equal success in at least two of three pairs. A tie keeps the runbook alone.
+
+**Draft settings for the owner (not a decision).** Reuse the M1 bounds: `gpt-6-luna` on Responses, `--max-requests 6`, `--max-output-tokens 512`, the 12 slots in plan order and one fresh process each. That allows at most 72 requests and 36,864 output tokens. At the 21 November standard rates, assuming 1,500 input tokens per request: `(72 × 1,500 × 0.125 + 36,864 × 0.50) / 10⁶ ≈ USD 0.032`. This is a planning estimate, not a cap. Recheck the rates first.
+
+## Limits of this evidence
+
+- No model ran. The scripted outcomes are fixed, so they show what the harness delivers and records, not whether the reminder helps a model.
+- Under the agreed applicability rule, the C reminder appears only after the instance read finds one hot replica. By then the runbook and the restart gate already require the ticket and both link reads, so the reminder can at most reorder them. A null effort result is likely by construction. Delivering the reminder at shift start would be a different policy, and comparing lookup with handover delivery is already a listed follow-up.
+- The D reminder never reaches the model, so D tests whether stored memory leaks past its condition (it does not). It cannot test whether a shown reminder misleads.
+- Provider caching is a possible confound. The reminder adds about 1.2 KB to each decision where it is shown. In the M1 baseline, requests used 460–687 input tokens, so the reminder arm alone may cross the 1,024-token cache minimum. Compare whole-incident cost, including cache reads and writes, and keep the slot order.
+- Three pairs per case give low power. The A setup is scripted by design, so every trial gets the same reminder. Memory is process-local, so each slot replays the setup.
+
+## #14 and #15 audit
+
+| Criterion | State |
+|---|---|
+| #14 provenance, scoped retrieval, applicability, correction, deletion, grounded lessons, traced decisions | Integrated and traced ([earlier entry](#2026-11-23-m2-scoped-handover-and-access)). Recurrence, changed facts, conflict, deletion and isolation now also have the study evidence above. |
+| #14 conflicts | Flagged and kept out of advice. The operator handoff for a flag that *blocks* a live decision cannot happen in M2. No M2 decision depends on a claim, because the restart gate uses fresh readings. This is later work, not a gap in M2 behaviour. |
+| #14 persistence beyond one process | Not needed for the M2 trials: each trial replays its setup in one process. Worker resume belongs to M3. |
+| #15 identity, approvals, injected text, denials, isolation | Integrated. |
+| #15 handover gap from the PR #36 review | **Fixed.** The dispatch-time metrics read can fail while exactly one link reads faulty. The handover now names both the missing metrics and the faulty link with its tick, and the earlier samples are marked `superseded` instead of `current`. Test: `test_failed_dispatch_metrics_and_one_faulty_link_are_reported_together`. It fails on the previous code. |
+| #15 personal data | Ticket text is reduced to its key, time and incident before any use. A new test puts a synthetic email address and phone number in a ticket. Neither reaches the decision context, the tool trace, memory or the report. Other M2 tools return no free text, so further masking has no M2 source to act on. |
+| #15 critical flag re-read at dispatch | **Blocked.** Every tool call advances one tick. The grant is at tick 22, the three dispatch reads at 23–25 and dispatch at 26; the grant expires at 27 under the agreed five-tick window. A fourth read would expire every grant in A and C. Options: a combined deployment and metrics read in the simulator tool, or an owner decision on the window. Scope still uses this shift's traced deployment record (tick 16). |
+| #15 rollback | Deferred by the contract. |
+
+## Reproduce
+
+In the isolated environment, from the repository root:
+
+```sh
+PYTHONPATH=. python -m pytest -q meridian/tests projects/course-02-agentic-ai/first_line
+cd projects/course-02-agentic-ai/first_line
+PYTHONPATH=../../.. python handover_study.py | cmp - offline-study-m2.jsonl
+PYTHONPATH=../../.. python m2_demo.py | cmp - offline-traces-m2.jsonl
+PYTHONPATH=../../.. python demo.py | cmp - offline-traces-m1.7.jsonl
+```
+
+Results: 215 tests passed (185 before this change, 2 scoped and 28 study tests added). The study trace and the M2 trace reproduced, and the five M1 (`gateway-m1.7`) traces matched byte for byte. The #15 fix changes `scoped_shift.py` only on the failed-metrics path, which the M2 sequence never takes, so `offline-traces-m2.jsonl` is unchanged. `shift.py` is also unchanged. Each study record carries the SHA-256 of `handover_study.py`, so any edit to the runner requires regenerating the study trace.
+
 # 2026-11-23 M2 scoped handover and access
 
 This entry implements part of the agreed [memory](specs/memory.md) and [access](specs/permissions.md) contracts in the offline first-line simulator. The M2 entry point (`first_line/scoped_shift.py`) reuses the M1 tool reads, evidence gate, executor receipt and recovery check. It adds a scoped memory store and a restart dispatcher. The supplied course memory store has one source field per record. M2 needs several independently scoped sources per claim, so that it can correct a claim and drop a deleted source while keeping the other observations. All decisions are scripted. No model was called.
@@ -39,7 +156,7 @@ The decision records the source references and both ticks. In A, the grant is at
 | Integrated in the shift flow (traced) | Requester and source-access filtering before each decision; condition fit; ranking; clue at close with timed sources and a condition; shift note for one handover or 24 hours; before the next decision, withdrawal of a precise temporal restart claim on a sourced earlier fall, and a flag, not a withdrawal, on a broad causal claim, with the observed readings, times and receipt cited in each case; restart identity as the intersection of requester, role and credential; the approval bound to requester, approver, incident, action, target and key; expiry checked after the dispatch reads; single use; fresh evidence at dispatch; ticket text kept out of decision context and the tool trace. |
 | Library calls shown in traces | Operator deletion and its effect on later views; another team's views. These run between shifts, as in the reference incident. |
 | Library-only, unit-tested | Procedure proposal (two independent incidents), operator approval and revocation, published editions for another team, clue review after seven days, reader changes. |
-| Outstanding | Persistence beyond one process; model behaviour; the operator handoff when a `possible_conflict` blocks a live decision (conflicts are flagged only); personal-data masking beyond removing ticket text (the synthetic fixtures contain no personal data); re-reading the critical flag at dispatch; rollback (deferred by the contract). |
+| Outstanding | Persistence beyond one process; model behaviour; the operator handoff when a `possible_conflict` blocks a live decision (conflicts are flagged only); personal-data masking beyond removing ticket text (the synthetic fixtures contain no personal data); re-reading the critical flag at dispatch; rollback (deferred by the contract). The [#17 audit](#14-and-15-audit) updates this row. |
 
 Issue coverage. #14: provenance, scoped retrieval, applicability, correction and deletion are integrated or traced. A possible conflict is flagged and shown, and the flagged claim is not used as advice. Retained lessons cite recorded tool evidence. Recurrence (A → C) and changed conditions (D) use public cases. A library-level test covers the reference values (10:02 and 10:05). The same documents withdraw the temporal claim and only flag the causal one. R repeats both inside the shift flow. #15: identity and approvals are enforced in code. Injected ticket text is dropped. Denials and isolation are shown. The traces use synthetic identifiers and contain no secrets.
 
