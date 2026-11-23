@@ -6,7 +6,7 @@ Each specialist reports what they found and where they found it. If they disagre
 
 State: **Agreed** for M3 · [Owner sign-off, 23 November](https://github.com/jpboliv/meridian-project/issues/10#issuecomment-7116373182).
 
-Implementation state: offline and scripted, in draft [PR #41](https://github.com/jpboliv/meridian-project/pull/41) (`team/handoff.py`); not yet reviewed or merged. Two read-only specialists with disjoint allowlists, validated task replies, one shared follow-up and one shift budget run on the M2 scoped lead path. Public evidence: [M3 specialist handoffs](../experiments.md#2026-11-23-m3-specialist-handoffs-offline). Specialist judgement by a model, and its token cost, are untested.
+**Implemented** for the offline, scripted [M3 release](https://github.com/jpboliv/meridian-project/tree/M3) in `team/handoff.py`. Two read-only specialists have separate tool lists, one shared follow-up and one shift budget. The [public runs](../experiments.md#2026-11-23-m3-specialist-handoffs-offline) measure simulator calls and outcomes. They do not measure model judgement or token cost.
 
 The lead agent owns the incident, combines findings, and reports to the operator. The infrastructure specialist reads instance and link measurements. The application specialist reads change records, tickets, and service logs. Specialists can read within the caller's scope. Neither can approve actions, dispatch changes, or write shared lessons.
 
