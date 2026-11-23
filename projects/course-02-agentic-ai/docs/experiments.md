@@ -10,6 +10,8 @@ All 248 offline tests passed. The [replay commands below](#reproduce) match the 
 
 # 2026-11-23: live M2 results
 
+[Owner acceptance](https://github.com/jpboliv/meridian-project/issues/17#issuecomment-7114986712): the annotated [M2 release tag](https://github.com/jpboliv/meridian-project/tree/M2) points to `658b9c0`, the merge of [PR #38](https://github.com/jpboliv/meridian-project/pull/38). The live studies ran on `85ed8d0`; the release also contains their evidence and offline analysis.
+
 **Keep the full runbook alone as the default.** In the recurrence case the model saw the sourced reminder but did the same work. Keep the scoped memory and correction mechanism for handover; this result is about adding one particular reminder. In the separate prompt-layout study, moving the clock did not produce provider cache hits.
 
 Both studies ran on reviewed source `85ed8d0` under the [owner's one-time authorization](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7114140964). All 57 planned slots ran once, with no replacements, failures, unrun slots or adoption blockers. All 205 requests returned `gpt-6-luna`. The provider exposes an alias, not an independently pinned backend revision. Limits: six requests per slot, 512 output tokens per request, temperature unset, no application cache, public simulator cases only. To estimate cost, subtract cache reads and writes from reported input to get ordinary input. Price ordinary input, cache reads, cache writes and output at USD 0.10, 0.01, 0.125 and 0.50 per million tokens respectively. These estimates are not invoices.
