@@ -1,0 +1,15 @@
+# M3 recovery-check fixture: public A, except that the reference-db link degrades at tick 29, after the scripted
+# restart at tick 27. Readings taken after the receipt do not show recovery.
+id: shift-n
+title: A dependency link degrades after the restart
+seed: 11
+date: "2026-11-10"
+start_time: "10:05"
+warmup_ticks: 15
+incident: {id: INC-4700, summary: "The order gateway is slow.", alert: latency_high/order-gateway}
+tickets:
+  - {at: 14, key: MRX-4700, component: order-gateway, summary: "INC-4700: slow order acknowledgements"}
+faults:
+  - {type: resource, at: 2, instance: order-gateway-2, resource: memory, start_value: 93, rate: 0.05}
+  - {type: link, at: 29, source: order-gateway, target: reference-db, mode: degraded, extra_latency_ms: 185}
+approver: {approve_roles: [on-call]}

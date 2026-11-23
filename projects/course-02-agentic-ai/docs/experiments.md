@@ -1,3 +1,90 @@
+# 2026-11-23 M3 worker resume, offline
+
+[#19](https://github.com/jpboliv/meridian-project/issues/19) applies the agreed [interruption and resume contract](specs/execution.md) to the integrated #18 lead, in draft [PR #41](https://github.com/jpboliv/meridian-project/pull/41). Every decision is scripted code. No model was called, no key was read, and nothing was spent. M3 is not tagged: that waits for review and the owner.
+
+**Is this necessary?** The supplied executor's `status` returns `unknown_key` for a key it never saw and also for a rejected request. It also has no notion of a request in flight. The contract's table needs those cases told apart, so a small ledger records every keyed request beside the executor. The checkpoint is one JSON file. No simulator or M1/M2 file changes. The code is [`team/resume.py`](../team/resume.py) and the runs are in [`team/resume_demo.py`](../team/resume_demo.py).
+
+**Isolation.** Same environment as the [#18 entry](#2026-11-23-m3-specialist-handoffs-offline), checked from inside before any development. It was checked again before this slice: no host home, reservation, manifest, `.env` or `runs/`, no credential variables, no network, and public A loaded.
+
+## Design
+
+- **Intent before effect.** At the M2 effect boundary, after the grant, the three fresh dispatch reads and the rights recheck, the lead saves its intent before calling the executor. The intent records the incident, step, caller (requester, credential, approver), target, action, parameters, key, approval reference, dispatch evidence sources, remaining budget and ledger identity.
+- **Atomic writes.** Each checkpoint is one complete update. It is written to a temporary file in the same directory, flushed to disk, renamed over the old file, and the directory is flushed. A reader sees the old or the new version. A torn or foreign file is unreadable and is never partly trusted.
+- **Key.** Code derives the key from the incident and target, as in M2 (`INC-4100:restart:order-gateway-2`), and records it in the intent. The ledger binds it to the action and parameters. A replacement sends only the recorded key for the recorded target. Any other target or key is refused, and a different target needs a new decision.
+- **Ledger.** It lives in the surviving simulation process, beside the supplied executor that keeps its receipts in memory. Each keyed request is entered as `in_flight` before the executor runs it, then marked `completed`, `rejected` or `conflict`. A lookup returns `absent` only when this ledger never received the key, so nothing with that key is in flight. Each ledger has an identity. The intent records it, so an empty ledger from a restarted simulator cannot pass for authoritative absence.
+- **Stop.** `WorkerStopped` is a `BaseException` raised at a named point. No worker handler catches it, nothing after it runs, and the harness discards the worker. The agreed point is `after_dispatch_before_receipt`: the executor has applied the restart and returned its receipt, and the worker has not saved it. A control uses `after_intent_before_dispatch`.
+- **Replacement.** A new worker object gets only the checkpoint path, the surviving simulator and ledger, current access, and the incident's memory workspace. Its trace starts empty. Grants lived in the stopped worker's access state and are never restored. Its budget is the intent's remaining budget minus one call reserved for the dispatch. A ledger lookup is one traced call.
+
+| What the ledger establishes | What the replacement does |
+|---|---|
+| `completed`, bound to the recorded action and target | Saves the original receipt in the checkpoint. Does not send again. Reads fresh gateway health by the M1 recovery rule: three consecutive healthy readings, all after the receipt |
+| `rejected`, `conflict`, or a binding that differs from the intent | Stops the write and asks for a decision |
+| `absent` in the same ledger | Reassesses current need with a new specialist round. Then the unchanged M2 path: a current on-call grant, three fresh dispatch reads, rights rechecked, and at most one dispatch with the original key |
+| `in_flight`, unavailable, another ledger, or no readable checkpoint | Outcome unknown. Hands over with no dispatch |
+
+The current read right is checked before the lookup. Without it, the replacement records the gap and hands over without inferring recovery.
+
+## Results
+
+[`team/offline-traces-m3.jsonl`](../team/offline-traces-m3.jsonl), resume records. Each record carries its own checks; all pass, and the naive control fails its check as intended.
+
+| Run | Ledger at resume | Replacement | Applied restarts |
+|---|---|---|---:|
+| **Restart applied, receipt not saved** (public A, the agreed demonstration) | `completed`. The worker stopped at tick 28; the checkpoint still says `intent_saved` with no receipt | Reconciles ACT-001 (key `INC-4100:restart:order-gateway-2`, APR-001, tick 27) and saves it. No second request; the ledger shows one. The first fresh window (ticks 27–29) still includes 191 ms at tick 27. The next window has 6.5, 5.0 and 5.0 ms at ticks 28–30, all after the receipt, so it reports `recovered`. Three calls | 1 |
+| Intent saved, never dispatched | `absent`, same ledger | Grant APR-001 not restored (its window ends at tick 28). New specialist round, on-call grant APR-002, dispatch reads at ticks 37–39. One restart with the original key at tick 40, recovered at ticks 41–43. 17 of 19 calls | 1 |
+| Request still in flight (held by the ledger) | `in_flight` | Unknown, hands over. The executor never ran it | 0 |
+| Executor rejected the request | `rejected` | Stops the write, asks for a decision | 0 |
+| Checkpoint edited to another target | bound to `order-gateway-2` | Key conflict: stops | 1 (the original) |
+| Ledger unavailable | error | Unknown, hands over, no recovery claim | 1 (the original) |
+| Whole simulator restarted | `absent` in `shift-a/ledger-2` | Not trusted: the intent went to `shift-a/ledger-1`. Unknown, no dispatch in the new simulator. The original simulator had one restart; that evidence is gone | 0 in the new simulator |
+| Read right revoked before resume | not read | Records the access gap and hands over. No read, no recovery inferred | 1 (the original) |
+| Checkpoint torn | not read | Unknown. Nothing read or sent | 0 |
+| Link degrades after the restart (fixture N) | `completed` | Reconciles ACT-001. Six fresh reads end at 190 ms (ticks 32–34), so it reports no recovery and asks for healthy readings. A worker that trusted the old receipt would have claimed recovery | 1 |
+| **Naive control:** re-send with a new key, no lookup | `completed` | ACT-002 applied: **2 restarts**. The one-effect check fails, as intended | 2 |
+
+Fixture N ([`team/cases-m3/shift-n.yaml`](../team/cases-m3/shift-n.yaml)) is public A with the reference-db link degraded from tick 29, after the restart. It is a constructed control.
+
+## Controls
+
+[`team/test_team_resume.py`](../team/test_team_resume.py) has 12 tests:
+
+- A failed rename keeps the previous complete checkpoint. Torn and foreign files are unreadable.
+- `WorkerStopped` is not an `Exception`.
+- Each ledger state: a duplicate keeps the original receipt, and a rebound key conflicts with no effect.
+- The intent is saved before the ledger or executor sees anything, with every agreed field.
+- The replacement starts with its own trace and the budget left at the intent.
+- A replacement refuses another target or key.
+- An absent intent with the restart right revoked, or with the on-call now declining, leads to no dispatch.
+- A replacement budget too small for the reassessment hands over with no dispatch.
+- An unknown stop point is rejected.
+- The public resume records pass their checks, and the naive control fails its own.
+
+## Reproduce
+
+From the repository root, in the locked environment:
+
+```sh
+cd projects/course-02-agentic-ai/team
+PYTHONPATH=../../.. python m3_demo.py --summary                    # both parts, one readable line per run
+PYTHONPATH=../../.. python m3_demo.py | cmp - offline-traces-m3.jsonl
+cd ../../.. && PYTHONPATH=. python -m pytest -q meridian/tests projects/course-02-agentic-ai/first_line \
+  projects/course-02-agentic-ai/study_results projects/course-02-agentic-ai/team
+cd projects/course-02-agentic-ai/first_line
+PYTHONPATH=../../.. python handover_study.py | cmp - offline-study-m2.jsonl
+PYTHONPATH=../../.. python m2_demo.py | cmp - offline-traces-m2.jsonl
+PYTHONPATH=../../.. python demo.py | cmp - offline-traces-m1.7.jsonl
+```
+
+Results in the isolated environment: 295 tests passed (259 before M3, 24 handoff and 12 resume tests added). The M3 trace reproduced, and the study, M2 and five M1 (`gateway-m1.7`) traces matched byte for byte. The saved M2 live ledger still summarizes with no invalid, interrupted, unrun or rejected slots.
+
+## Limits and open questions
+
+- **Stop mechanism.** The worker is stopped in-process by an exception at the agreed point, not by killing an operating-system process. The checkpoint is on disk; the ledger and the executor's receipts are in the simulation process's memory, as in the contract's demonstration.
+- **Injected faults.** The in-flight, rejected and unavailable ledger states are injected control faults, and the conflict control edits the checkpoint by hand. One worker runs at a time: there are no leases or concurrent workers.
+- **One key per target.** The key is the M2 per-incident restart key. A second, separately approved restart of the same instance in the same incident would be deduplicated by the executor. That is outside this demonstration.
+- **Open question: is a grant restored when its window is still open?** The replacement never restores a grant. In the absent run it asks the on-call again (APR-002), although APR-001's window ran to tick 28 and the lookup happened at tick 27. The three fresh dispatch reads would have outlasted that window in any case. The owner may prefer that the replacement hand over instead of asking the on-call again.
+- **Scripted.** No model chose anything, and the 32-call budget is a harness choice for this evidence, not an owner-agreed limit.
+
 # 2026-11-23 M3 specialist handoffs, offline
 
 [#18](https://github.com/jpboliv/meridian-project/issues/18) applies the agreed [specialist handoff contract](specs/coordination.md) in draft [PR #41](https://github.com/jpboliv/meridian-project/pull/41). Every decision is scripted code. No model was called, no key was read, and nothing was spent.
@@ -69,7 +156,7 @@ From the repository root, in the locked environment:
 ```sh
 cd projects/course-02-agentic-ai/team
 PYTHONPATH=../../.. python m3_demo.py --part handoff --summary   # one readable line per run
-PYTHONPATH=../../.. python m3_demo.py --part handoff | cmp - offline-traces-m3.jsonl
+PYTHONPATH=../../.. python m3_demo.py | cmp - offline-traces-m3.jsonl   # both parts; the first eight records are the handoffs
 cd ../../.. && PYTHONPATH=. python -m pytest -q projects/course-02-agentic-ai/team
 ```
 

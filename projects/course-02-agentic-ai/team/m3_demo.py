@@ -1,7 +1,9 @@
 """Run the public M3 demonstrations offline with scripted decisions. No model is called and no key is read.
 
-`--part handoff` runs the #18 specialist handoffs and the single-agent comparison under one shift budget. Each
-output line is one JSON record with its own `checks`; the command exits 1 if any check fails.
+`--part handoff` runs the #18 specialist handoffs and the single-agent comparison under one shift budget.
+`--part resume` runs the #19 worker replacement and its failure controls. With no option, both run. Each output
+line is one JSON record with its own `checks`; the command exits 1 if any check fails. Controls marked
+`"control": "naive"` show a worker that ignores the contract; for them the listed checks are expected to fail.
 """
 
 import argparse
@@ -163,28 +165,41 @@ async def handoff_runs():
 
 
 def passed(record):
+    if record.get("control") == "naive":
+        return not all(record["checks"].values())
     return all(record["checks"].values())
 
 
 def brief(record):
     verdict = "PASS" if passed(record) else "FAIL"
+    if record.get("control") == "naive":
+        verdict += " (naive control: its checks fail as expected)"
     if "rows" in record:
         detail = "; ".join(f"{row['case']} {row['agent']}: {row['status']}, {row['tool_calls']} calls, "
                            f"{row['effects']} effect(s)" for row in record["rows"])
-    else:
+    elif record["part"] == "handoff":
         detail = (f"{record['status']}, {record['tool_calls']} calls {record['by_role']}, "
                   f"{record['effects']} effect(s), follow-up {'used' if record['follow_up_used'] else 'unused'}")
+    elif "replacement" in record:
+        replacement = record["replacement"]
+        detail = (f"stopped {record['stopped']['point'] if record['stopped'] else '-'}; replacement "
+                  f"{replacement['resume'].get('outcome')} -> {replacement['status']}, {record['effects']} effect(s)")
+    else:
+        detail = f"{record['effects']} effect(s)"
     return f"{verdict:4} {record['part']:7} {record.get('case', '-'):2} {record['run']}: {detail}"
 
 
 async def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--part", choices=("handoff",), help="Run one part only.")
+    parser.add_argument("--part", choices=("handoff", "resume"), help="Run one part only.")
     parser.add_argument("--summary", action="store_true", help="Print one readable line per run instead of JSON.")
     args = parser.parse_args(argv)
     records = []
     if args.part in (None, "handoff"):
         records += await handoff_runs()
+    if args.part in (None, "resume"):
+        from resume_demo import resume_runs  # #19, which builds on this module
+        records += await resume_runs()
     for record in records:
         print(brief(record) if args.summary else json.dumps(record, sort_keys=True, ensure_ascii=False))
     failed = [record["run"] for record in records if not passed(record)]
