@@ -1,5 +1,7 @@
 # Current focus
 
+[Interactive presentation for Luís](projects/course-02-agentic-ai/docs/meridian-interativo.html) (#20, branch `presentation/m2-interactive-report`): one offline HTML page in Portuguese with the 10:02/10:05 reference case as a step-through story, the M1 A/B trace and the M2 results. Documentation only; no code, simulator, tag or live run changed.
+
 M2 is complete. The [owner accepted the release](https://github.com/jpboliv/meridian-project/issues/17#issuecomment-7114986712); the annotated [M2 tag](https://github.com/jpboliv/meridian-project/tree/M2) points to `658b9c0`, and [#17](https://github.com/jpboliv/meridian-project/issues/17) is closed.
 
 Both [M2 live studies](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-live-m2-results) finished: 12/12 reminder slots and 45/45 caching slots passed. Keep the runbook alone: same six reads in every exposed pair. The timestamp/cache study saw zero cache reads and writes. Combined estimated cost USD 0.019344775; no replacement or reserved runs. The one-time authorizations are consumed. [PR #38](https://github.com/jpboliv/meridian-project/pull/38) holds the reviewed evidence.
