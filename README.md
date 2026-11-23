@@ -2,7 +2,7 @@
 
 How can an on-call agent use yesterday's incident to investigate faster without mistaking it for today's evidence?
 
-Start with the [presentation report for Luís](projects/course-02-agentic-ai/docs/relatorio.md), in Portuguese. The [project guide](projects/course-02-agentic-ai/README.md) explains how to run the offline lab and links to the detailed specifications.
+Start with the [presentation report for Luís](projects/course-02-agentic-ai/docs/relatorio.md), in Portuguese. To check the M1 snapshot yourself, follow its [verification route](projects/course-02-agentic-ai/docs/relatorio.md#verificar-no-seu-computador); it needs no `.env`, API key or paid run. The [project guide](projects/course-02-agentic-ai/README.md) explains how to run the offline lab and links to the detailed specifications.
 
 The private [meridian-project repository](https://github.com/jpboliv/meridian-project) holds the code, [issues](https://github.com/jpboliv/meridian-project/issues), and [milestone reviews](https://github.com/jpboliv/meridian-project/milestones). See the [roadmap](ROADMAP.md) and [current focus](STATUS.md) for the milestone plan.
 
@@ -74,7 +74,8 @@ do not copy or share that folder. `--locked` uses the committed dependency versi
 and reports an error if `uv.lock` needs updating.
 
 Create a local `.env` from `.env.example`, then add your personal API key. Do
-not commit that file.
+not commit that file. Exercises that call a model need it; the Course 2 project's
+offline lab and tests, and the M1 verification route, do not.
 
 Run an exercise from the repository root with `uv run`, for example:
 
