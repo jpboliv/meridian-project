@@ -1,3 +1,172 @@
+# 2026-11-23 M3 worker resume, offline
+
+[#19](https://github.com/jpboliv/meridian-project/issues/19) applies the agreed [interruption and resume contract](specs/execution.md) to the integrated #18 lead, in draft [PR #41](https://github.com/jpboliv/meridian-project/pull/41). Every decision is scripted code. No model was called, no key was read, and nothing was spent. M3 is not tagged: that waits for review and the owner.
+
+**Is this necessary?** The supplied executor's `status` returns `unknown_key` for a key it never saw and also for a rejected request. It also has no notion of a request in flight. The contract's table needs those cases told apart, so a small ledger records every keyed request beside the executor. The checkpoint is one JSON file. No simulator or M1/M2 file changes. The code is [`team/resume.py`](../team/resume.py) and the runs are in [`team/resume_demo.py`](../team/resume_demo.py).
+
+**Isolation.** The initial implementer edited the isolated tracked archive via host-side file tools; tests ran inside bubblewrap. For the review fix at `ecd5925`, the implementer first loaded public A inside the supplied `inside` wrapper and verified that the host home, both evaluator stores, their manifests and `.env` were absent and only loopback was present. All fix edits, test runs and trace generation used that wrapper in `/work`, with the project environment mounted read-only at `/venv`.
+
+**PR #41 review fix.** The same-label regression failed at `ecd5925`: the replacement reassessed an absent key in an independent empty ledger. Each ledger now generates its own opaque instance ID. The atomic intent saves that ID; resume compares it before reading the key. The trace shows the display labels and whether the IDs match, never the IDs themselves.
+
+## Design
+
+- **Intent before effect.** At the M2 effect boundary, after the grant, the three fresh dispatch reads and the rights recheck, the lead saves its intent before calling the executor. The intent records the incident, step, caller (requester, credential, approver), target, action, parameters, key, approval reference, dispatch evidence sources, remaining budget and ledger identity.
+- **Atomic writes.** Each checkpoint is one complete update. It is written to a temporary file in the same directory, flushed to disk, renamed over the old file, and the directory is flushed. A reader sees the old or the new version. A torn or foreign file is unreadable and is never partly trusted.
+- **Key.** Code derives the key from the incident and target, as in M2 (`INC-4100:restart:order-gateway-2`), and records it in the intent. The ledger binds it to the action and parameters. A replacement sends only the recorded key for the recorded target. Any other target or key is refused, and a different target needs a new decision.
+- **Ledger.** It lives in the surviving simulation process, beside the supplied executor that keeps its receipts in memory. Each keyed request is entered as `in_flight` before the executor runs it, then marked `completed`, `rejected` or `conflict`. A lookup returns `absent` only when this ledger never received the key, so nothing with that key is in flight. Each ledger has an identity. The intent records it, so an empty ledger from a restarted simulator cannot pass for authoritative absence.
+- **Stop.** `WorkerStopped` is a `BaseException` raised at a named point. No worker handler catches it, nothing after it runs, and the harness discards the worker. The agreed point is `after_dispatch_before_receipt`: the executor has applied the restart and returned its receipt, and the worker has not saved it. A control uses `after_intent_before_dispatch`.
+- **Replacement.** A new worker object gets only the checkpoint path, the surviving simulator and ledger, current access, and the incident's memory workspace. Its trace starts empty. Grants lived in the stopped worker's access state and are never restored. Its budget is the intent's remaining budget minus one call reserved for the dispatch. A ledger lookup is one traced call.
+
+| What the ledger establishes | What the replacement does |
+|---|---|
+| `completed`, bound to the recorded action and target | Saves the original receipt in the checkpoint. Does not send again. Reads fresh gateway health by the M1 recovery rule: three consecutive healthy readings, all after the receipt |
+| `rejected`, `conflict`, or a binding that differs from the intent | Stops the write and asks for a decision |
+| `absent` in the same ledger | Reassesses current need with a new specialist round. Then the unchanged M2 path: a current on-call grant, three fresh dispatch reads, rights rechecked, and at most one dispatch with the original key |
+| `in_flight`, unavailable, another ledger, or no readable checkpoint | Outcome unknown. Hands over with no dispatch |
+
+The current read right is checked before the lookup. Without it, the replacement records the gap and hands over without inferring recovery.
+
+## Results
+
+[`team/offline-traces-m3.jsonl`](../team/offline-traces-m3.jsonl), resume records. Each record carries its own checks; all pass, and the naive control fails its check as intended.
+
+| Run | Ledger at resume | Replacement | Applied restarts |
+|---|---|---|---:|
+| **Restart applied, receipt not saved** (public A, the agreed demonstration) | `completed`. The worker stopped at tick 28; the checkpoint still says `intent_saved` with no receipt | Reconciles ACT-001 (key `INC-4100:restart:order-gateway-2`, APR-001, tick 27) and saves it. No second request; the ledger shows one. The first fresh window (ticks 27–29) still includes 191 ms at tick 27. The next window has 6.5, 5.0 and 5.0 ms at ticks 28–30, all after the receipt, so it reports `recovered`. Three calls | 1 |
+| Intent saved, never dispatched | `absent`, same ledger | Grant APR-001 not restored (its window ends at tick 28). New specialist round, on-call grant APR-002, dispatch reads at ticks 37–39. One restart with the original key at tick 40, recovered at ticks 41–43. 17 of 19 calls | 1 |
+| Request still in flight (held by the ledger) | `in_flight` | Unknown, hands over. The executor never ran it | 0 |
+| Executor rejected the request | `rejected` | Stops the write, asks for a decision | 0 |
+| Checkpoint edited to another target | bound to `order-gateway-2` | Key conflict: stops | 1 (the original) |
+| Ledger unavailable | error | Unknown, hands over, no recovery claim | 1 (the original) |
+| Whole simulator restarted | Empty ledger, same `shift-a/ledger-1` label | Instance mismatch; the replacement does not consult the key. Unknown, no dispatch in the new simulator. The original simulator had one restart; that evidence is gone | 0 in the new simulator |
+| Read right revoked before resume | not read | Records the access gap and hands over. No read, no recovery inferred | 1 (the original) |
+| Checkpoint torn | not read | Unknown. Nothing read or sent | 0 |
+| Link degrades after the restart (fixture N) | `completed` | Reconciles ACT-001. Six fresh reads end at 190 ms (ticks 32–34), so it reports no recovery and asks for healthy readings. A worker that trusted the old receipt would have claimed recovery | 1 |
+| **Naive control:** re-send with a new key, no lookup | `completed` | ACT-002 applied: **2 restarts**. The one-effect check fails, as intended | 2 |
+
+Fixture N ([`team/cases-m3/shift-n.yaml`](../team/cases-m3/shift-n.yaml)) is public A with the reference-db link degraded from tick 29, after the restart. It is a constructed control.
+
+## Controls
+
+[`team/test_team_resume.py`](../team/test_team_resume.py) has 13 tests:
+
+- A failed rename keeps the previous complete checkpoint. Torn and foreign files are unreadable.
+- `WorkerStopped` is not an `Exception`.
+- Each ledger state: a duplicate keeps the original receipt, and a rebound key conflicts with no effect.
+- The intent is saved before the ledger or executor sees anything, with every agreed field.
+- The replacement starts with its own trace and the budget left at the intent.
+- An independent empty ledger with the original label cannot authorize a resend after an effect.
+- A replacement refuses another target or key.
+- An absent intent with the restart right revoked, or with the on-call now declining, leads to no dispatch.
+- A replacement budget too small for the reassessment hands over with no dispatch.
+- An unknown stop point is rejected.
+- The public resume records pass their checks, and the naive control fails its own.
+
+## Reproduce
+
+From the repository root, in the locked environment:
+
+```sh
+cd projects/course-02-agentic-ai/team
+PYTHONPATH=../../.. python m3_demo.py --summary                    # both parts, one readable line per run
+PYTHONPATH=../../.. python m3_demo.py | cmp - offline-traces-m3.jsonl
+cd ../../.. && PYTHONPATH=. python -m pytest -q meridian/tests projects/course-02-agentic-ai/first_line \
+  projects/course-02-agentic-ai/study_results projects/course-02-agentic-ai/team
+cd projects/course-02-agentic-ai/first_line
+PYTHONPATH=../../.. python handover_study.py | cmp - offline-study-m2.jsonl
+PYTHONPATH=../../.. python m2_demo.py | cmp - offline-traces-m2.jsonl
+PYTHONPATH=../../.. python demo.py | cmp - offline-traces-m1.7.jsonl
+```
+
+Results in the isolated environment: 296 tests passed (259 before M3, 24 handoff and 13 resume tests added). The M3 trace reproduced, and the study, M2 and five M1 (`gateway-m1.7`) traces matched byte for byte. The saved M2 live ledger still summarizes with no invalid, interrupted, unrun or rejected slots.
+
+## Limits and open questions
+
+- **Stop mechanism.** The worker is stopped in-process by an exception at the agreed point, not by killing an operating-system process. The checkpoint is on disk; the ledger and the executor's receipts are in the simulation process's memory, as in the contract's demonstration.
+- **Injected faults.** The in-flight, rejected and unavailable ledger states are injected control faults, and the conflict control edits the checkpoint by hand. One worker runs at a time: there are no leases or concurrent workers.
+- **One key per target.** The key is the M2 per-incident restart key. A second, separately approved restart of the same instance in the same incident would be deduplicated by the executor. That is outside this demonstration.
+- **Current approval.** The replacement never restores a grant. In the absent run it asks the on-call again (APR-002), although APR-001's window ran to tick 28 and the lookup happened at tick 27. The three fresh dispatch reads would have outlasted that window in any case.
+- **Scripted.** No model chose anything, and the 32-call budget is a harness choice for this evidence, not an owner-agreed limit.
+
+# 2026-11-23 M3 specialist handoffs, offline
+
+[#18](https://github.com/jpboliv/meridian-project/issues/18) applies the agreed [specialist handoff contract](specs/coordination.md) in draft [PR #41](https://github.com/jpboliv/meridian-project/pull/41). Every decision is scripted code. No model was called, no key was read, and nothing was spent.
+
+**Is this necessary?** The contract asks for distinct specialists, validated handoffs, one bounded follow-up, and a comparison with the single agent under the same budget. The team reuses the M2 scoped shift for identity, scope, approval, dispatch evidence, receipt and recovery. It adds one module ([`team/handoff.py`](../team/handoff.py)), one fixture and no simulator change. It lives in `team/`, so the M1 and M2 code, their traces and the #17 study fingerprint (which hashes `first_line/` and `meridian/`) stay unchanged.
+
+**Isolation.** Checked from inside the development environment before any development. Bubblewrap held a writable archive of the tracked files at `ca81c6b`, the system runtime, and the repository `.venv` read-only at `/venv`. It had no host home, no credential variables and no network: loopback only, and an external connection returned "network unreachable". Public A loaded through `load_scenario`. Absent: `/home`, the owner's home, both reservation locations (`~/.local/share/meridian-evaluator/course-02/m1-reservation/` and the old in-checkout `private/m1-reservation/`), their `SHA256SUMS` manifests, `.env`, `private/` and `runs/`. A filesystem search found no reservation, manifest or `.env` name. The initial implementer edited that archive via host-side file tools and executed tests inside bubblewrap. Only the intended files were copied back. No held-out material was opened.
+
+## Design
+
+| Role | Reads | Cannot |
+|---|---|---|
+| Lead | Runbook. Approval request, dispatch and recovery reads through the unchanged M2 gates | Roll back, restart a service, or restart a critical component |
+| Application specialist | `deployments.get_service`, `deployments.list_deployments`, `tickets.search_issues`, `read_logs` | Approve, dispatch, write lessons, or read outside its task |
+| Infrastructure specialist | `read_metrics` (per instance), `check_link` | Same as the application specialist |
+
+- **Scope.** A specialist gets only a `Reader` with one method. A tool outside the task's allowlist, a call after the deadline, or a caller without the read right is refused before any trace entry or tick. The two allowlists are disjoint and contain no write tool.
+- **Task and reply.** Each task carries the task ID, incident ID, caller scope, target, question, allowed reads, deadline (issue tick + 6) and remaining budget. Each reply carries the task ID, status (`found`, `no_evidence` or `blocked`), target, finding, sources, limitations, suggested next read and return tick.
+- **Reply checks.** The lead accepts a reply only if it has the right task ID, a known status and the task's target, and arrives by the deadline. Every source must be a traced call that the harness recorded for this task, with matching tool, tick and time. Every `source` inside the finding must be one of those calls. Otherwise the reply is `missing`, `timed_out` or `invalid`.
+- **Evidence.** Only an accepted `found` reply supplies evidence. An accepted `blocked` or `no_evidence` reply is a named gap: it is never read as healthy and never triggers a follow-up.
+- **Order.** The lead asks both specialties in one round, in a fixed order: application, then infrastructure. The calls are sequential, and each source keeps its own tick. Measurements come last so they are fresh at the decision: the M1 restart check expires readings after five ticks.
+- **One follow-up** across both specialists, for a missing, timed-out, invalid or conflicting reply. A format repair uses it. The first problem in role order gets it.
+- **Conflict.** Gateway service logs name slow responses from a link that `check_link` reports up. Instead of letting the newest reading win, the lead asks infrastructure for one separating read of that link.
+- **Decision.** Code-owned. A faulty link is handed over with its source; a restart for it is outside the lead's authority. The application context says which changes were found and whether any log error names them. Without an accepted application finding there is no ticket or deployment record, so no restart is in scope. Without accepted measurements the lead hands over. Otherwise, if the M1 restart evidence holds, the lead takes the unchanged M2 path: on-call grant, three fresh dispatch reads, a rights and grant recheck, one keyed restart, and three healthy post-receipt readings in the report.
+- **Budget.** One budget of 32 traced simulator calls per shift, shared by the lead and both specialists. A call over the budget is refused before it runs: it is not traced and does not advance the clock. The single-agent comparison uses the same tools class and budget.
+
+## Results
+
+[`team/offline-traces-m3.jsonl`](../team/offline-traces-m3.jsonl), handoff records. Each record carries its own checks; all pass.
+
+| Run | Case | Lead accepted / lacked | Follow-up | Outcome |
+|---|---|---|---|---|
+| Complete | A | both / – | unused | Restart of `order-gateway-2` (ACT-001 at tick 27, APR-001), recovery from readings at ticks 28–30 |
+| Complete | D | both / – | unused | Hands over the degraded reference-db link (`check_link`, tick 21). Application found CHG-5100 (2.4.0→2.4.1) and CHG-4310. Gateway logs name reference-db slow 10 times at ticks 10–19, and no error names either change: "no evidence that any of them caused the delay. No rollback proposed." No approval request, no effect |
+| Application missing | D | infrastructure / application `missing` | application, also lost | Same link handover, plus: "The link reading alone cannot identify a change to roll back, and a missing reply does not mean nothing changed." No effect |
+| Application lost once | D | both / – | application, answered | Same report as the complete D run |
+| Conflicting | M | both / – | infrastructure, `check_link` reference-db | Logs read at tick 19 show slow reference-db responses at ticks 10–19; the link read at tick 21 says up. With the newest reading winning, a restart of `order-gateway-2` would have been supported. The separating read at tick 23 says degraded. The lead hands over the link, states that the readings were sequential, and asks for no approval |
+| Format repair | D | application / infrastructure `missing` | application (`wrong task ID`) | No second follow-up for the lost infrastructure reply: "A missing reply is not evidence of health." No effect |
+| Budget of 10 | A | both / – | unused | After the on-call grant, the first dispatch link read is refused (call 11). Honest handover; no receipt, no effect |
+
+Fixture M ([`team/cases-m3/shift-m.yaml`](../team/cases-m3/shift-m.yaml)) is public A with an intermittent reference-db link: degraded until tick 20, up at ticks 20–22, degraded from tick 23. It is a constructed control, not an observed incident.
+
+### Comparison with the single agent under one budget
+
+The single agent is the M2 scoped shift with the scripted M1 driver and an empty memory, under the same 32-call budget and tools class.
+
+| Case | Agent | Outcome | Traced calls (lead / application / infrastructure) | Approval requests | Effects |
+|---|---|---|---:|---:|---:|
+| A | single | recovered | 15 | 1 | 1 |
+| A | team | recovered | 16 (9 / 4 / 3) | 1 | 1 |
+| D | single | link handover | 7 | 0 | 0 |
+| D | team | link handover with change context | 8 (1 / 4 / 3) | 0 | 0 |
+| D, application missing | team | link handover naming the gap | 12 (1 / 8 / 3) | 0 | 0 |
+| M | single | link handover after its dispatch was refused (`dependency_link_not_up`, link read at tick 24) | 11 | 1 | 0 |
+| M | team | link handover, no approval request | 9 (1 / 4 / 4) | 0 | 0 |
+
+**Costs: measured or scripted.** Measured from the simulator trace and executor audit: traced calls by role, simulated ticks (one per call), approval requests and applied effects. Scripted: every lead and specialist decision is code. 0 model requests and 0 tokens were sent. A live team's token cost is therefore not measured. A model-backed team would add one or more requests per specialist task, plus any repair, against the same budget. The offline numbers say nothing about that.
+
+**What the comparison shows.** With the same outcome and effects, the team made one more call in A and D. In D it added change records, which the link reading alone cannot supply. In the M control it avoided an approval request that the single agent's own dispatch gate later refused. It shows no outcome or cost advantage in A, and a lost reply costs the team four extra calls.
+
+## Controls
+
+[`team/test_team_handoff.py`](../team/test_team_handoff.py) has 24 tests. An out-of-scope or write tool is refused with no trace entry or tick. A caller without the read right gets no reads. Replies that are lost, have the wrong task ID, an empty target, a late return, an unknown source, a source borrowed from another task, or an unlisted source inside the finding are each rejected. An accepted `blocked` reply is a named gap with no follow-up. When both replies are missing, there is still only one follow-up. A missing application reply blocks the A restart, because no ticket was accepted. A refused call is not traced and does not advance time. A budget too small for the follow-up ends in an honest handover. A conflict settled by an `up` read lets the lead proceed. Rollback and service restart are refused at the M2 tools. Only the lead requests approval and dispatches.
+
+## Reproduce
+
+From the repository root, in the locked environment:
+
+```sh
+cd projects/course-02-agentic-ai/team
+PYTHONPATH=../../.. python m3_demo.py --part handoff --summary   # one readable line per run
+PYTHONPATH=../../.. python m3_demo.py | cmp - offline-traces-m3.jsonl   # both parts; the first eight records are the handoffs
+cd ../../.. && PYTHONPATH=. python -m pytest -q projects/course-02-agentic-ai/team
+```
+
+## Limits
+
+Specialists are scripted functions. They show the contract's mechanics, not model judgement about what to read. Delivery faults (lost, invalid, late) are injected by the harness after the specialist's reads, so their tool costs are real but the faults are synthetic. The conflict rule covers one pattern: logs naming a slow link that the monitor reports up. Two specialists reporting different instance states would not be detected. The log scan matches the simulator's own message templates. A change is reported as unproven when no ERROR line names its ID. That is weak evidence of absence, and the report says only "no evidence". The 32-call budget is a harness choice for this comparison, not an owner-agreed limit.
+
 # 2026-11-23 M2 dispatch classification
 
 [Issue #15 owner direction](https://github.com/jpboliv/meridian-project/issues/15#issuecomment-7107223366) and the [agreed access contract](specs/permissions.md) require the exact affected noncritical gateway instance to remain authorized at dispatch. After the three traced diagnostic reads, the executor gate checks action, instance, component and criticality through `meridian.security.describe_action`. The access decision records the classification separately from the diagnostic reads. A missing, critical, mismatched or unverifiable target prevents the effect. The lookup advances no ticks, and the five-tick grant still expires at the same tick.

@@ -4,7 +4,9 @@
 
 If the agent loses the reply to a restart request, it reads the action record. The restart can succeed even when the reply never arrives.
 
-Draft for owner review · [Issue 11](https://github.com/jpboliv/meridian-project/issues/11).
+State: **Agreed** for M3 · [Owner sign-off, 23 November](https://github.com/jpboliv/meridian-project/issues/11#issuecomment-7116373196).
+
+Implementation state: offline and scripted, in draft [PR #41](https://github.com/jpboliv/meridian-project/pull/41) (`team/resume.py`), on the #18 lead path; awaiting re-review. An atomic checkpoint saves the intent before dispatch. A ledger in the surviving simulation process records every keyed request. A replacement worker reconciles the original receipt after the agreed stop point and does not dispatch again. The other table rows have controls. Public evidence: [M3 worker resume](../experiments.md#2026-11-23-m3-worker-resume-offline). The checkpoint binds the ledger-generated instance ID. An empty ledger with the same display label is not authoritative. If the original ledger establishes absence, the replacement seeks current approval; it never restores the checkpoint’s historical grant.
 
 A checkpoint records unfinished work. A receipt records the executor's result. Before dispatch, save the incident, step, caller, target, action, parameters, stable action key, approval reference, evidence references, and remaining budget. Save the intent before the executor can act. Write each checkpoint as one complete update.
 
