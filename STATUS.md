@@ -1,5 +1,7 @@
 # Current focus
 
+M2 handoff, 23 November: [PR #36 merged](https://github.com/jpboliv/meridian-project/pull/36) at `34ab7b8`. The [final independent review](https://github.com/jpboliv/meridian-project/pull/36#issuecomment-7107213728) approved `a200666` with no High or Medium findings. All 185 offline tests passed and both M1 and M2 traces reproduced byte for byte. The remaining [handover reporting gap](https://github.com/jpboliv/meridian-project/issues/15#issuecomment-7107223366) did not permit an effect. Next: [compare the full runbook with and without a sourced reminder (#17)](https://github.com/jpboliv/meridian-project/issues/17#issuecomment-7107223470). M2 has not been tagged.
+
 M1 is complete. The owner accepted the first-line agent, including the code-owned Case E handover. Issues [#12](https://github.com/jpboliv/meridian-project/issues/12) and [#13](https://github.com/jpboliv/meridian-project/issues/13) are closed. See the [owner sign-off](https://github.com/jpboliv/meridian-project/issues/13#issuecomment-7102990460), [annotated M1 tag](https://github.com/jpboliv/meridian-project/tree/M1) at `f07fb1e`, and [23 November closeout](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-m1-closeout).
 
 The released `gateway-m1.7` passed 119 offline tests and 5/5 scripted cases. The archived `gateway-m1.6` live baseline passed 9/15. Case E in m1.7 uses fresh link evidence from the stalled refresh or a new harness read. The harness writes the handover.
