@@ -1,5 +1,7 @@
 # Memory lifecycle
 
+State: **Agreed** for M2 · [Owner sign-off, 23 November](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7105048143).
+
 ![Proposed flow](../flows/memory.svg)
 
 We agreed to keep two records. The incident record says what happened. The lesson tells the next shift what to check. Today’s readings determine whether the same fix fits.
@@ -30,24 +32,56 @@ Remove its links and copied material from saved lessons, summaries, and handover
 
 If the team deletes the action log, the latency record still shows the start of recovery at 10:02. Without another record of the restart time, the next shift cannot establish which event came first. Deletion does not reinstate the claim that the restart fixed the delay.
 
-## Draft: who can save and retrieve a lesson
+## Agreed: who can receive a lesson
 
-Draft for owner review · [Issue 6](https://github.com/jpboliv/meridian-project/issues/6). A lesson is team-only by default. Apply the same rule to search, direct reads by ID, automatic handover, and cached notes. Filter by the actual requester and source access before ranking results. Do not expose the existence of another team's private lesson.
+A lesson is team-only by default. Apply the same rule to search, direct reads by ID, automatic handover, and cached notes. Do not expose the existence of another team's private lesson.
 
 For example, a database operator cannot receive a gateway lesson that cites a private gateway log. To share it, the owning operator approves a separate edition for the named team. That edition needs evidence the recipient can read and no private excerpts. If its evidence disappears, apply the same deletion rule.
 
-Save observations during the incident. At shift close, the lead agent proposes an incident record and any diagnostic clue. The harness admits a clue only if its source, time, subject, and condition are available. Correct a directly contradicted claim as soon as the evidence arrives. Do not wait for shift close to remove bad advice.
+## Agreed: what a diagnostic clue must contain
+
+At shift close, save a proposed clue only if it names its source, the observation time, the affected component or instance, and a condition the next shift can check. For example, a clue to compare gateway instances must cite the original timed observation and say that the comparison requires a reading for each instance. If the observation time is missing, do not save the clue.
+
+## Agreed: when a diagnostic clue expires
+
+After seven simulated days without review, stop suggesting the clue to new shifts, even if its source still exists. Keep the incident as history under the existing access and deletion rules. Suggest the clue again only after someone reviews its evidence and confirms that its condition still applies.
+
+## Agreed: when a shift note expires
+
+A shift note expires after the next handover or 24 simulated hours from creation, whichever comes first. For example, pass “read instance 2 next” to the incoming shift once. If the note is already 24 hours old, omit it. If the work is still open at a later handover, write a fresh note.
+
+## Agreed: when an agent can propose a team procedure
+
+At least two independent incidents must support the proposed procedure. A ticket and a handover about the same outage count as one incident: they may support a diagnostic clue, but they do not show recurrence. Once the threshold is met, the agent may submit a proposal. An operator must approve it before the team uses it as a procedure.
+
+## Agreed: what procedure approval covers
+
+The operator approves the exact text, scope, version, and review date together. If any of these changes, obtain fresh approval before using the changed procedure. For example, adding the database team to a gateway-only procedure changes its scope even if the steps stay the same.
+
+## Agreed: when to stop using a procedure
+
+Stop using a procedure if it expires, an operator revokes it, or a change makes it incompatible. After an upgrade, check what the procedure requires. If only a fleet average remains, stop using a procedure that compares individual gateway instances. If the individual readings remain available, the version change alone does not disqualify it.
+
+## Agreed: how to rank eligible lessons
+
+Among eligible lessons the requester can read, rank first by component match, then by fit to current conditions. If both match equally well, prefer the more recent supporting observation. For example, when two gateway clues fit the component, an older clue that better matches today's symptoms comes first.
+
+## Agreed: who can save and retrieve a lesson
+
+Filter by the actual requester and source access before ranking results.
+
+Save observations during the incident. At shift close, the lead agent proposes an incident record and any diagnostic clue. Apply the [agreed clue requirements](#agreed-what-a-diagnostic-clue-must-contain). A worker checkpoint resumes unfinished work in that incident; it is not a lesson, an action receipt, or evidence for a later incident. Correct a directly contradicted claim as soon as the evidence arrives. Do not wait for shift close to remove bad advice.
 
 | Record | What can support it | When to stop using it |
 |---|---|---|
 | Incident record | A dated observation or action receipt with its origin | Use it only as history. Remove content when its source is deleted. |
-| Shift note | Open work, missing evidence, and the next read | After the next handover or 24 simulated hours, whichever comes first. |
-| Diagnostic clue | At least one documented incident, an author, a team, and a testable condition | After seven simulated days without review, remove it from active recall. A new deployment triggers a condition review. |
-| Approved procedure | The agent can propose a procedure after two independent incidents. An operator approves its text, scope, version, and review date. | On expiry, revocation, or an incompatible change. A procedure never grants permission for a particular action. |
+| Shift note | Open work, missing evidence, and the next read | Follow the [agreed shift-note expiry rule](#agreed-when-a-shift-note-expires). |
+| Diagnostic clue | At least one documented incident, an author, a team, and a testable condition | Follow the [agreed expiry rule](#agreed-when-a-diagnostic-clue-expires). A new deployment triggers a condition review. |
+| Approved procedure | Apply the [proposal threshold](#agreed-when-an-agent-can-propose-a-team-procedure) and obtain [operator approval](#agreed-what-procedure-approval-covers). | Follow the [agreed stop conditions](#agreed-when-to-stop-using-a-procedure). A procedure never grants permission for a particular action. |
 
 Record whether the source was a person, tool, document, or agent inference. Label a reported symptom as reported. An executor receipt supports an action. A reading supports an observation. A high confidence score cannot turn copied ticket text into a procedure.
 
-Among eligible lessons, rank by component, agreement with current conditions, then the date of the supporting observation. Allow a scoped search beyond the two handover clues. Display source, age, condition, and uncertainty. Skip expired, superseded, or withdrawn advice.
+Apply the [agreed ranking](#agreed-how-to-rank-eligible-lessons) after filtering. Allow a scoped search beyond the two handover clues. Display source, age, condition, and uncertainty. Skip expired, superseded, or withdrawn advice.
 
 Classify evidence against a specific claim. A direct contradiction permits a factual correction. A possible conflict stays flagged until an independent source settles it. An unsupported concern does not withdraw advice. Record `withdrawn_at`, reason, and source references together when withdrawing advice. Deletion takes precedence over historical references.
 

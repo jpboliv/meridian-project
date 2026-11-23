@@ -16,7 +16,27 @@ Agreed, 19 Nov 2026 ([#6](https://github.com/jpboliv/meridian-project/issues/6))
 
 Agreed, 19 Nov 2026 ([#6](https://github.com/jpboliv/meridian-project/issues/6)): [remove deleted evidence from derived records](specs/memory.md#agreed-when-a-source-is-deleted). A copied claim can outlive its evidence if the system removes only the link.
 
+Agreed, 23 Nov 2026 ([#6 owner review](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7103963598)): allow a [separate edition for a named team](specs/memory.md#agreed-who-can-receive-a-lesson) rather than forwarding a private lesson or forbidding all sharing. The recipient can verify the clue without seeing the private log.
+
+Agreed, 23 Nov 2026 ([#9 owner review](https://github.com/jpboliv/meridian-project/issues/9#issuecomment-7103963642)): bind [one gateway restart](specs/permissions.md#agreed-one-approval-for-one-gateway-restart) to one instance and a short-lived approval. A shift that resumes after the fault moves must not use the old grant on the newly affected instance.
+
+Agreed, 23 Nov 2026 ([#6 owner review](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104148998)): [stop suggesting an unreviewed clue after seven simulated days](specs/memory.md#agreed-when-a-diagnostic-clue-expires). A past incident can remain accurate while its advice becomes stale. Keep the incident as history; review the evidence and confirm the condition before suggesting the clue again.
+
+Agreed, 23 Nov 2026 ([#6 owner review](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104286574)): [expire a shift note after one handover or 24 simulated hours](specs/memory.md#agreed-when-a-shift-note-expires), whichever comes first. A fresh note tells the next shift that the task is still open; forwarding the old note cannot establish that.
+
+Agreed, 23 Nov 2026 ([#6 owner review](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104405732)): require [two independent incidents before an agent proposes a team procedure](specs/memory.md#agreed-when-an-agent-can-propose-a-team-procedure). Counting reports instead would let a single outage look like a recurring pattern. An operator still decides whether to approve the proposal.
+
+Agreed, 23 Nov 2026 ([#6 owner review](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104456047)): [stop using a procedure](specs/memory.md#agreed-when-to-stop-using-a-procedure) on expiry, operator revocation, or an incompatible change. Checking the required readings after an upgrade keeps a valid procedure available without asking a shift to act on evidence it no longer has.
+
+Agreed, 23 Nov 2026 ([#6 owner review](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104486966)): [bind procedure approval to its exact text, scope, version, and review date](specs/memory.md#agreed-what-procedure-approval-covers). Otherwise an edit could extend a gateway procedure to another team without the operator reviewing that use.
+
+Agreed, 23 Nov 2026 ([#6 owner review](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104566649)): [require a source, observation time, affected component or instance, and testable condition](specs/memory.md#agreed-what-a-diagnostic-clue-must-contain) before saving a clue at shift close. The next shift needs to verify what happened then and check whether the clue applies now.
+
 ## Delegated choices for owner review
+
+Agreed, 23 Nov 2026: the owner signed off on the combined [memory contract](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7105048143) and [M2 access contract](https://github.com/jpboliv/meridian-project/issues/9#issuecomment-7105048144) for #14 and #15. The authorized restart and denied critical change cover the demonstration; rollback stays outside M2.
+
+23 Nov 2026: the owner agreed to [rank eligible lessons by component, current conditions, then observation time](specs/memory.md#agreed-how-to-rank-eligible-lessons) and delegated routine M2 choices. Recency breaks a tie rather than displacing a better match. Review the remaining [memory](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104800247) and [access](https://github.com/jpboliv/meridian-project/issues/9#issuecomment-7104800162) details together. The proposed access contract defers rollback: one permitted gateway restart and one denied critical change already demonstrate the M2 boundary.
 
 19 November, after the course-fit review: deliver the verified restart and missing-evidence handover first. Keep correction, failed specialist handoff, and resume on the delivery path. For the class deep dive, keep one prompt-caching comparison: moving the timestamp tests the Helloform idea without changing the information available to the agent. Evaluate cost alongside verified outcomes. Defer application caches and compaction comparisons. For the separate memory comparison, keep the full runbook in both versions. See the [delivery priorities](project.md#agreed-delivery-priorities).
 

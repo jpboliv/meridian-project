@@ -4,7 +4,15 @@ M1 is complete. The owner accepted the first-line agent, including the code-owne
 
 The released `gateway-m1.7` passed 119 offline tests and 5/5 scripted cases. The archived `gateway-m1.6` live baseline passed 9/15. Case E in m1.7 uses fresh link evidence from the stalled refresh or a new harness read. The harness writes the handover.
 
-In a separate M2 session, take up the pending owner decisions on [memory (#6)](https://github.com/jpboliv/meridian-project/issues/6) and [access (#9)](https://github.com/jpboliv/meridian-project/issues/9).
+M2 owner review, 23 November: the owner agreed on [team-scoped lesson sharing (#6)](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7103963598), [seven-day expiry for unreviewed diagnostic clues (#6)](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104148998), and [one approval for one gateway restart (#9)](https://github.com/jpboliv/meridian-project/issues/9#issuecomment-7103963642).
+
+The owner also agreed on [shift-note expiry (#6)](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104286574): one handover or 24 simulated hours, whichever comes first. [Procedure proposals (#6)](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104405732) need support from at least two independent incidents and still require operator approval before adoption.
+
+The owner agreed to [stop using a procedure (#6)](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104456047) on expiry, operator revocation, or an incompatible change. [Operator approval (#6)](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104486966) covers the exact procedure text, scope, version, and review date together.
+
+[Diagnostic clues saved at shift close (#6)](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104566649) must name the source, observation time, affected component or instance, and a condition the next shift can check. [Ranking is agreed](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7104800247): component match first, fit to current conditions second, and the newest supporting observation breaks ties.
+
+The owner approved the combined M2 [memory](https://github.com/jpboliv/meridian-project/issues/6#issuecomment-7105048143) and [access](https://github.com/jpboliv/meridian-project/issues/9#issuecomment-7105048144) contracts on 23 November. Next: implement [scoped handover (#14)](https://github.com/jpboliv/meridian-project/issues/14) and [access enforcement (#15)](https://github.com/jpboliv/meridian-project/issues/15) on `m2/scoped-handover-access`. M2 uses the gateway restart to demonstrate action authority and defers rollback.
 
 The [tracker and milestones](https://github.com/jpboliv/meridian-project/milestones) now live beside the code in the private repository. The M1 implementation ([PR #1](https://github.com/jpboliv/meridian-project/pull/1)) has merged after an independent review, [confirmed on #8](https://github.com/jpboliv/meridian-project/issues/8#issuecomment-7065258620). [#25](https://github.com/jpboliv/meridian-project/pull/25), which documents the reviewer workflow, has also merged.
 
