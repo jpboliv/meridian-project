@@ -191,7 +191,7 @@ Cada linha do ficheiro é uma execução. Para ver o que aconteceu numa delas, c
 
 ## Utilização de IA
 
-O código, os testes e estes documentos foram escritos com assistentes de IA, incluindo o Claude Code. Pelas regras do projeto, cada pedido de integração é revisto por uma instância nova antes do merge. O dono do projeto decide as especificações, as execuções reais e os gastos. Os resultados sem modelo não usam nenhum modelo. Só os dois pilotos do caso B e as 15 execuções da linha de base usaram o `gpt-6-luna`. Fora do agente, a 18 de novembro, cinco execuções só de leitura usaram o `claude-opus-5-5` sobre ficheiros de exemplo, sem o simulador: uma num [estudo](experiments.md#2026-11-18-shortened-restart-handover) e quatro [noutro](experiments.md#2026-11-18-does-the-memory-lesson-change-the-investigation).
+Assistentes de IA, incluindo o Claude Code, ajudaram a escrever o código, os testes e estes documentos, com revisão independente. O dono do projeto decide as especificações, as execuções reais e os gastos. Só os dois pilotos do caso B e as 15 execuções da linha de base usaram o `gpt-6-luna`. Fora do agente, a 18 de novembro, cinco execuções só de leitura usaram o `claude-opus-5-5` sobre ficheiros de exemplo, sem o simulador: uma num [estudo](experiments.md#2026-11-18-shortened-restart-handover) e quatro [noutro](experiments.md#2026-11-18-does-the-memory-lesson-change-the-investigation).
 
 ## Fontes
 
