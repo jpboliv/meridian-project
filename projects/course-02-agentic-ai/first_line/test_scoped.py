@@ -6,9 +6,9 @@ import pytest
 
 import scoped_access
 from m2_demo import (CREDENTIAL, OPERATOR, OUTSIDER, READERS, REQUESTER, TEAM, build_shift,
-                     critical_request, investigate, run_sequence)
+                     critical_request, investigate, run_sequence, save_claims)
 from scoped_access import READ
-from scoped_memory import Evidence, Lesson, ScopedMemory
+from scoped_memory import Claim, Evidence, Lesson, ScopedMemory
 from shift import GATEWAY
 
 NOW = datetime(2026, 11, 4, 10, 5)
@@ -56,32 +56,50 @@ def test_public_sequence():
     assert denied["access"][-1]["decision"] == revoked["access"][-1]["decision"] == "permission_denied"
 
 
-def test_correction_arrives_before_the_next_decision_and_survives_deletion():
+def test_one_read_withdraws_the_temporal_claim_and_only_flags_the_causal_one():
     rows = by_case()
-    first, second = rows["restart after the link cleared"], rows["next shift corrects the claim"]
+    first, second = rows["restart after the link cleared"], rows["next shift checks both claims"]
     assert first["effects"] == 1 and second["effects"] == 0 and "restart" not in second["steps"]
-    check = next(row for row in second["memory"] if "checked_claim" in row)
+    checks = {row["meaning"]: row for row in second["memory"] if "checked_claim" in row}
     decisions = [row for row in second["memory"] if "shown" in row]
-    assert check["assessment"] == "contradiction" and check["tick"] < decisions[0]["tick"]
-    assert all(row["corrections"] == ["INC-4400/outgoing-claim"] for row in decisions)
-    assert second["reads"][0] == "read_metrics" and second["old_claim_lookup"] is None
-    times = {row["fact"]: row["time"] for row in second["correction"]["sources"]}
-    assert times["latency_drop"] < times["restart"] and second["correction"]["withdrawn_claim"]
-    deleted = rows["restart receipt deleted"]
-    assert [row["fact"] for row in deleted["correction"]["sources"]] == ["latency_drop"]
-    assert "no longer establish" in deleted["correction"]["conclusion"]
-    assert deleted["old_claim_lookup"] is deleted["other_team_correction"] is None
+    assert checks["first_fall_after_restart"]["assessment"] == "contradiction"
+    assert checks["restart_fixed_delay"]["assessment"] == "possible_conflict"
+    assert all(row["tick"] < decisions[0]["tick"] for row in checks.values()) and second["reads"][0] == "read_metrics"
+    temporal, causal = second["claims"]["first_fall_after_restart"], second["claims"]["restart_fixed_delay"]
+    assert all(row["corrections"] == [checks["first_fall_after_restart"]["checked_claim"]]
+               and row["disputed"] == [checks["restart_fixed_delay"]["checked_claim"]] for row in decisions)
+    assert temporal["withdrawn"] and not temporal["flagged"] and temporal["flag"] is None
+    assert causal["flagged"] and not causal["withdrawn"] and causal["correction"] is None
+    assert temporal["lookup"] is causal["lookup"] is None  # neither is relied on for a decision
+    # Both views cite the same observed readings: the fall before the 10:16 restart and the one after it.
+    for view in (temporal["correction"], causal["flag"]):
+        readings = {row["time"][11:16]: row["latency_ms"] for row in view["readings"]}
+        assert readings["10:06"] == 365 and readings["10:07"] == 181
+        assert readings["10:16"] == 190 and readings["10:17"] == 6.5
+        assert view["restart"]["time"].endswith("10:16:00") and view["restart"]["target"] == "order-gateway-2"
+        assert "from 365 ms at 10:06 to 181 ms at 10:07" in view["conclusion"]
+        assert "from 190 ms at 10:16 to 6.5 ms at 10:17" in view["conclusion"]
+    assert "neither establish nor rule out" in causal["flag"]["conclusion"]
+    assert "stays withdrawn" in temporal["correction"]["conclusion"]
+
+
+def test_deletion_keeps_readings_status_and_uncertainty():
+    deleted = by_case()["restart receipt deleted"]
+    temporal, causal = deleted["claims"]["first_fall_after_restart"], deleted["claims"]["restart_fixed_delay"]
+    assert temporal["withdrawn"] and causal["flagged"] and temporal["lookup"] is causal["lookup"] is None
+    for view in (temporal["correction"], causal["flag"]):
+        assert view["restart"] is None and len(view["readings"]) == 5
+        assert "order of events is not established" in view["conclusion"]
+        assert "from 365 ms at 10:06 to 181 ms at 10:07" in view["conclusion"]
+    assert temporal["other_team"] == causal["other_team"] == [None, None]
     assert deleted["other_team_lessons"] == []
 
 
-def test_first_context_carries_the_correction():
+def test_first_context_carries_the_correction_and_the_flag():
     memory = ScopedMemory()
     first = build_shift("R", memory)
     run(first)
-    ref = f"{first.shift_id}/handover"
-    memory.record(Evidence(ref, "INC-4400", GATEWAY, first.now(), "reported", READERS, "claimed_cause", "restart", TEAM))
-    memory.save(REQUESTER, Lesson("claim", TEAM, REQUESTER.id, GATEWAY, "restart_started_recovery",
-                                  "Restarting the gateway fixed the delay.", (ref,), first.now()))
+    claims = save_claims(first, memory)
     contexts = []
 
     async def decide(context):
@@ -89,23 +107,82 @@ def test_first_context_carries_the_correction():
         return await investigate(context)
 
     run(build_shift("R", memory, sim=first.deps.sim), decide)
-    assert contexts[0]["corrections"][0]["withdrawn_claim"] == "Restarting the gateway fixed the delay."
-    assert all(item["id"] != "claim" for context in contexts for item in context["handover"])
+    assert [row["claim"] for row in contexts[0]["corrections"]] == [claims["first_fall_after_restart"]]
+    assert [row["claim"] for row in contexts[0]["disputed"]] == [claims["restart_fixed_delay"]]
+    assert contexts[0]["disputed"][0]["claim_text"] == "Restarting order-gateway-2 fixed the delay."
+    assert all(item["id"] not in claims.values() for context in contexts for item in context["handover"])
 
 
-def test_reference_documents_contradict_the_claim():
-    """Library-level check on the agreed reference values: 10:02 latency drop, 10:05 restart."""
+REFERENCE = datetime(2026, 11, 3, 10, 0)
+
+
+def reference_memory(meaning, target=GATEWAY, incident="INC-4000"):
+    """The agreed reference documents: latency 880, 880, 740, 620 ms from 10:00, and a restart at 10:05."""
     memory = ScopedMemory()
-    when = datetime(2026, 11, 3, 10, 5)
-    memory.record(Evidence("report", "INC-4000", GATEWAY, when, "reported", READERS, "claimed_cause", "restart", TEAM))
-    memory.save(REQUESTER, Lesson("old", TEAM, REQUESTER.id, GATEWAY, "restart_started_recovery",
-                                  "Restarting the gateway fixed the delay.", ("report",), when))
-    memory.record(Evidence("latency", "INC-4000", GATEWAY, when.replace(minute=2), "document", READERS,
-                           "latency_drop", 740, TEAM))
-    memory.record(Evidence("actions", "INC-4000", GATEWAY, when, "document", READERS, "restart", GATEWAY, TEAM))
-    assert memory.assess_restart_claim(REQUESTER, "old", ("latency",), when) == "possible_conflict"
-    assert memory.assess_restart_claim(REQUESTER, "old", ("latency", "actions"), when) == "contradiction"
-    assert memory.lookup(REQUESTER, "old", when, {"restart_started_recovery": 1}) is None
+    report = REFERENCE.replace(minute=6)
+    memory.record(Evidence("report", "INC-4000", GATEWAY, report, "reported", READERS, "claimed_cause", target, TEAM))
+    memory.save(REQUESTER, Lesson("old", TEAM, REQUESTER.id, GATEWAY, "hot_instance", "Restart claim.", ("report",),
+                                  report, claim=Claim(meaning, "INC-4000", target, REFERENCE)))
+    for minute, value in enumerate((880, 880, 740, 620)):
+        memory.record(Evidence(f"latency-{minute}", incident, GATEWAY, REFERENCE.replace(minute=minute), "document",
+                               READERS, "latency_ms", value, TEAM))
+    memory.record(Evidence("actions", incident, GATEWAY, REFERENCE.replace(minute=5), "document", READERS,
+                           "restart", GATEWAY, TEAM))
+    return memory
+
+
+LATENCY = tuple(f"latency-{minute}" for minute in range(4))
+
+
+def test_reference_documents_contradict_only_the_temporal_claim():
+    """Library-level check on the agreed reference values: latency fell at 10:02, the restart was at 10:05."""
+    memory = reference_memory("first_fall_after_restart")
+    assert memory.assess_restart_claim(REQUESTER, "old", LATENCY, REFERENCE) == "possible_conflict"  # order unknown
+    assert memory.assess_restart_claim(REQUESTER, "old", LATENCY + ("actions",), REFERENCE) == "contradiction"
+    correction = memory.correction(REQUESTER, "old")
+    assert "from 880 ms at 10:01 to 740 ms at 10:02" in correction["conclusion"]
+    assert memory.lookup(REQUESTER, "old", REFERENCE, {"hot_instance": 1}) is None
+
+    memory = reference_memory("restart_fixed_delay")
+    assert memory.assess_restart_claim(REQUESTER, "old", LATENCY, REFERENCE) == "unsupported"
+    assert memory.assess_restart_claim(REQUESTER, "old", LATENCY + ("actions",), REFERENCE) == "possible_conflict"
+    assert "old" not in memory.withdrawn and memory.correction(REQUESTER, "old") is None
+    assert "neither establish nor rule out" in memory.flag(REQUESTER, "old")["conclusion"]
+
+
+@pytest.mark.parametrize("change", ["other_target", "other_incident", "before_report", "falls_after_restart",
+                                    "two_restarts"])
+def test_temporal_claim_needs_a_matching_incident_target_and_time(change):
+    memory = reference_memory("first_fall_after_restart", target="order-gateway-2" if change == "other_target"
+                              else GATEWAY, incident="INC-4001" if change == "other_incident" else "INC-4000")
+    refs = LATENCY + ("actions",)
+    if change == "before_report":  # the only fall predates the reported delay
+        memory.lessons["old"] = replace(memory.lessons["old"], claim=replace(memory.lessons["old"].claim,
+                                                                             since=REFERENCE.replace(minute=3)))
+    if change == "falls_after_restart":
+        memory.record(Evidence("actions-early", "INC-4000", GATEWAY, REFERENCE.replace(minute=1), "document",
+                               READERS, "restart", GATEWAY, TEAM))
+        memory.delete(OPERATOR, "actions", REFERENCE)
+        refs = LATENCY + ("actions-early",)
+    if change == "two_restarts":
+        memory.record(Evidence("actions-again", "INC-4000", GATEWAY, REFERENCE.replace(minute=8), "document",
+                               READERS, "restart", GATEWAY, TEAM))
+        refs += ("actions-again",)
+    result = memory.assess_restart_claim(REQUESTER, "old", refs, REFERENCE)
+    assert "old" not in memory.withdrawn
+    expected = {"other_target": "possible_conflict", "other_incident": "unsupported", "before_report": "unsupported",
+                "falls_after_restart": "unsupported", "two_restarts": "possible_conflict"}
+    assert result == expected[change]
+
+
+def test_a_fall_only_after_the_restart_changes_neither_claim():
+    for meaning in ("first_fall_after_restart", "restart_fixed_delay"):
+        memory = reference_memory(meaning)
+        memory.record(Evidence("actions-early", "INC-4000", GATEWAY, REFERENCE.replace(minute=1), "document",
+                               READERS, "restart", GATEWAY, TEAM))
+        memory.delete(OPERATOR, "actions", REFERENCE)
+        assert memory.assess_restart_claim(REQUESTER, "old", LATENCY + ("actions-early",), REFERENCE) == "unsupported"
+        assert "old" not in memory.withdrawn and "old" not in memory.conflicts
 
 
 def test_scope_revalidation_and_expiry():
@@ -200,7 +277,7 @@ def test_close_is_idempotent():
 
 def test_close_failure_keeps_the_report_and_unrelated_history():
     memory = ScopedMemory()
-    unrelated = Evidence("INC-4100/shift-1/check_link/reference-db/20", "INC-4100", GATEWAY, NOW, "tool",
+    unrelated = Evidence("INC-4100/shift-1/check_link/reference-db/24", "INC-4100", GATEWAY, NOW, "tool",
                          READERS, "reference-db", "unrelated", TEAM)
     memory.record(unrelated)
     shift = build_shift("A", memory)
@@ -226,13 +303,68 @@ def test_dispatch_uses_fresh_traced_reads_after_the_grant():
     assert dispatch.tick < grant.tick + scoped_access.GRANT_TICKS
 
 
-def test_changed_link_after_grant_blocks_dispatch():
-    shift = build_shift("L", ScopedMemory())
-    assert run(shift)["status"] == "needs_operator"
-    record = shift.access.decisions[-1]
+def cited(memory):
+    return {ref for lesson in memory.lessons.values() for ref in lesson.sources}
+
+
+def test_changed_link_after_grant_blocks_dispatch_and_reaches_the_next_handover():
+    rows = by_case()
+    refused, later = rows["link degraded after grant"], rows["next shift after the refused dispatch"]
+    record = refused["access"][-1]
     assert (record["decision"], record["reason"]) == ("refresh_evidence", "dependency_link_not_up")
     assert record["evidence"]["links"]["reference-db"] == "degraded"
-    assert not shift.deps.sim.executor.effects()
+    assert refused["effects"] == later["effects"] == 0
+    assert refused["follow_up"] == {"operation": "investigate_link", "source": GATEWAY, "target": "reference-db",
+                                    "observed_tick": 24}
+    assert "degraded link" in refused["next_step"] and "tick 24" in refused["next_step"]
+    saved = {row["saved"]: row for row in refused["memory"] if "saved" in row}
+    assert saved["INC-4500/shift-1/open-link"]["sources"] == ["INC-4500/shift-1/check_link/reference-db/24"]
+    prefix = "INC-4500/shift-1/"
+    assert saved[prefix + "compare"]["sources"] == [  # newest dispatch reads only, each once
+        prefix + "read_metrics/order-gateway-1/23", prefix + "read_metrics/order-gateway-2/23",
+        prefix + "check_link/reference-db/24", prefix + "check_link/matching-engine/25"]
+    assert "links reference-db degraded, matching-engine up" in saved[prefix + "compare"]["text"]
+    assert all("reference-db up" not in row["text"] for row in saved.values())
+    received = later["handover_received"]
+    assert set(received) == set(saved) and all(ref.startswith("INC-4500/shift-1/") for row in received.values()
+                                               for ref in row["sources"])
+    assert all("reference-db up" not in row["text"] for row in received.values())
+    assert later["steps"][0] == "links" and later["follow_up"]["target"] == "reference-db"
+
+
+def broken_after_grant(shift, tool, broken):
+    original = getattr(shift.tools, tool)
+
+    def call(*args, **kwargs):
+        if shift.access.grants:
+            return broken(*args, **kwargs)
+        return original(*args, **kwargs)
+
+    setattr(shift.tools, tool, call)
+
+
+def test_failed_dispatch_link_read_leaves_the_link_unknown():
+    memory = ScopedMemory()
+    shift = build_shift("A", memory)
+    check_link = shift.tools.check_link
+    broken_after_grant(shift, "check_link", lambda source, target: {"error": "timeout"} if target == "reference-db"
+                       else check_link(source, target))
+    report = run(shift)
+    assert shift.access.decisions[-1]["reason"] == "dependency_link_not_up" and not shift.deps.sim.executor.effects()
+    assert "reference-db" not in report["observations"]["links"]
+    assert report["next_step"].startswith("Missing link state for reference-db.")
+    assert not memory.lessons  # no clue or note from the healthy link read before the grant
+    assert not any("/check_link/reference-db/" in ref for ref in memory.sources)
+
+
+def test_failed_dispatch_metrics_read_saves_no_clue():
+    memory = ScopedMemory()
+    shift = build_shift("A", memory)
+    broken_after_grant(shift, "read_metrics", lambda *args, **kwargs: {"error": "timeout"})
+    report = run(shift)
+    assert shift.access.decisions[-1]["reason"] == "no_instance_reading" and not shift.deps.sim.executor.effects()
+    assert report["next_step"].startswith("read_metrics returned no current per-instance reading.")
+    assert not memory.lessons
 
 
 def test_dispatch_follows_the_tool_result_not_world_state():

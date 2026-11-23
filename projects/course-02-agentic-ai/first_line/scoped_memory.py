@@ -21,6 +21,19 @@ class Evidence:
 
 
 @dataclass(frozen=True)
+class Claim:
+    """The explicit meaning of a reported restart claim. Code never infers it from the lesson text.
+
+    `first_fall_after_restart` is a precise temporal claim: between `since` (when the delay was reported) and the
+    restart of `target`, gateway latency did not fall. `restart_fixed_delay` is a broad causal attribution. Readings
+    can contradict the first; they can neither establish nor disprove the second."""
+    meaning: Literal["first_fall_after_restart", "restart_fixed_delay"]
+    incident: str
+    target: str
+    since: datetime
+
+
+@dataclass(frozen=True)
 class Lesson:
     id: str
     team: str
@@ -33,6 +46,7 @@ class Lesson:
     kind: Literal["clue", "note", "procedure"] = "clue"
     version: int = 1
     review_due: datetime | None = None
+    claim: Claim | None = None
 
 
 class ScopedMemory:
@@ -120,38 +134,101 @@ class ScopedMemory:
         self.lessons[lesson_id] = replace(lesson, reviewed=now)
 
     def claims(self, principal, incident):
-        """Unwithdrawn team claims that a restart started recovery in `incident`."""
+        """Unwithdrawn team restart claims about `incident` whose own sources the principal can read."""
         return [key for key, lesson in self.lessons.items()
-                if lesson.team == principal.team and lesson.condition == "restart_started_recovery"
-                and key not in self.withdrawn
-                and incident in {s.incident for s in self.evidence(principal, lesson.sources)}]
+                if lesson.team == principal.team and lesson.claim is not None and lesson.claim.incident == incident
+                and key not in self.withdrawn and len(self.evidence(principal, lesson.sources)) == len(lesson.sources)]
 
     def incident_sources(self, principal, incident, fact):
         return [key for key, source in self.sources.items()
                 if source.incident == incident and source.fact == fact and principal.id in source.readers]
 
+    def timeline(self, principal, claim, component, refs):
+        """Readable tool or document observations for the claim's incident and component: latency readings from
+        `since` on, in time order, and the receipts for a restart of the claimed target. Each fall is two readings,
+        the later strictly lower, placed before the restart only if it ends before the recorded restart minute."""
+        sources = [s for s in self.evidence(principal, refs) if s.incident == claim.incident
+                   and s.component == component and s.kind in {"tool", "document"}]
+        readings = sorted((s for s in sources if s.fact == "latency_ms" and s.observed >= claim.since),
+                          key=lambda s: (s.observed, s.id))
+        restarts = [s for s in sources if s.fact == "restart" and s.value == claim.target]
+        restart = restarts[0] if len(restarts) == 1 else None
+        falls = [{"from": a, "to": b, "before_restart": restart is not None and b.observed < restart.observed}
+                 for a, b in zip(readings, readings[1:]) if b.observed > a.observed and b.value < a.value]
+        return {"readings": readings, "restart": restart, "falls": falls}
+
     def assess_restart_claim(self, principal, lesson_id, refs, now):
-        """Classify the reference claim that a restart started latency recovery."""
+        """Classify sourced readings against one restart claim, by its explicit meaning.
+
+        A recorded fall before the single recorded restart of the claimed target directly contradicts
+        `first_fall_after_restart`, which is withdrawn. Against `restart_fixed_delay` the same evidence is only a
+        possible conflict: it stays flagged and is not relied on. Falls whose order against the restart is
+        unknown flag the temporal claim. Anything else changes nothing."""
         lesson = self.lessons.get(lesson_id)
-        if (lesson is None or principal.team != lesson.team or lesson.kind != "clue"
-                or lesson.condition != "restart_started_recovery" or lesson_id in self.withdrawn
+        if (lesson is None or lesson.claim is None or principal.team != lesson.team or lesson_id in self.withdrawn
                 or len(self.evidence(principal, lesson.sources)) != len(lesson.sources)):
             return "unsupported"
-        incident_ids = {s.incident for s in self.evidence(principal, lesson.sources)}
-        sources = [s for s in self.evidence(principal, refs)
-                   if s.incident in incident_ids and s.component == lesson.component]
-        drops = [s for s in sources if s.kind in {"tool", "document"} and s.fact == "latency_drop"]
-        restarts = [s for s in sources if s.kind in {"tool", "document"} and s.fact == "restart"]
-        if (len(drops) == len(restarts) == 1 and drops[0].incident == restarts[0].incident
-                and drops[0].observed < restarts[0].observed):
-            self.withdrawn[lesson_id] = {"team": lesson.team, "withdrawn_at": now, "reason": "latency fell before restart",
-                                         "sources": (drops[0].id, restarts[0].id)}
+        found = self.timeline(principal, lesson.claim, lesson.component, refs)
+        ids = tuple(s.id for s in found["readings"]) + ((found["restart"].id,) if found["restart"] else ())
+        early = [fall for fall in found["falls"] if fall["before_restart"]]
+        if lesson.claim.meaning == "first_fall_after_restart" and early:
+            self.withdrawn[lesson_id] = {"team": lesson.team, "claim": lesson.claim, "component": lesson.component,
+                                         "withdrawn_at": now, "sources": ids,
+                                         "reason": "a sourced latency fall precedes the recorded restart"}
             self.conflicts.pop(lesson_id, None)
             return "contradiction"
-        if drops or restarts:
-            self.conflicts[lesson_id] = tuple(s.id for s in sources)
+        if early or (lesson.claim.meaning == "first_fall_after_restart" and found["falls"] and not found["restart"]):
+            self.conflicts[lesson_id] = {"team": lesson.team, "claim": lesson.claim, "component": lesson.component,
+                                         "flagged_at": now, "sources": ids,
+                                         "reason": "readings neither establish nor rule out the claim"}
             return "possible_conflict"
         return "unsupported"
+
+    def claim_view(self, principal, lesson_id, record, status):
+        """The retained observations behind a withdrawal or flag, with their times and values. Nothing if the
+        principal is outside the team or cannot read every retained source."""
+        if (record is None or principal.team != record["team"]
+                or len(self.evidence(principal, record["sources"])) != len(record["sources"])):
+            return None
+        claim = record["claim"]
+        found = self.timeline(principal, claim, record["component"], record["sources"])
+        restart = found["restart"]
+        def told(falls):
+            return "; ".join(f"from {fall['from'].value:g} ms at {fall['from'].observed:%H:%M} to "
+                             f"{fall['to'].value:g} ms at {fall['to'].observed:%H:%M}" for fall in falls)
+
+        early = [fall for fall in found["falls"] if fall["before_restart"]]
+        later = [fall for fall in found["falls"] if not fall["before_restart"]]
+        if restart is None:
+            order = ((f"Latency fell {told(later)}. " if later else "")
+                     + "No retained record gives the restart time, so the order of events is not established.")
+        else:
+            order = (f"Before the restart of {restart.value} at {restart.observed:%H:%M}, latency fell {told(early)}."
+                     if early else f"No fall is recorded before the restart of {restart.value} at "
+                                   f"{restart.observed:%H:%M}.")
+            order += f" From the restart minute on, it fell {told(later)}." if later else ""
+        if status == "withdrawn":
+            outcome = ("The claim that latency first fell after the restart stays withdrawn. "
+                       "Whether the restart helped later is not established.")
+        else:
+            outcome = ("These readings neither establish nor rule out that the restart helped. "
+                       "The claim stays flagged; do not rely on it for the current decision.")
+        view = {"claim": lesson_id, "meaning": claim.meaning, "status": status,
+                "conclusion": f"{order} {outcome}", "reason": record["reason"],
+                "readings": [{"id": s.id, "time": s.observed.isoformat(), "latency_ms": s.value}
+                             for s in found["readings"]],
+                "restart": restart and {"id": restart.id, "time": restart.observed.isoformat(),
+                                        "target": restart.value}}
+        lesson = self.lessons.get(lesson_id)
+        if lesson and len(self.evidence(principal, lesson.sources)) == len(lesson.sources):
+            view["claim_text"] = lesson.text
+        return view
+
+    def correction(self, principal, lesson_id):
+        return self.claim_view(principal, lesson_id, self.withdrawn.get(lesson_id), "withdrawn")
+
+    def flag(self, principal, lesson_id):
+        return self.claim_view(principal, lesson_id, self.conflicts.get(lesson_id), "flagged")
 
     def change_readers(self, actor, ref, readers):
         source = self.sources.get(ref)
@@ -173,12 +250,10 @@ class ScopedMemory:
                 del self.lessons[key]
                 self.approved.pop(key, None)
                 self.conflicts.pop(key, None)
-        for record in self.withdrawn.values():
-            if ref in record["sources"]:
-                record["sources"] = tuple(source for source in record["sources"] if source != ref)
-                record["reason"] = "support withdrawn"
-        self.conflicts = {key: tuple(source for source in refs if source != ref)
-                          for key, refs in self.conflicts.items()}
+        # Withdrawn and flagged claims keep their status: deletion never reinstates a claim. Only the
+        # retained sources are cited afterwards.
+        for record in (*self.withdrawn.values(), *self.conflicts.values()):
+            record["sources"] = tuple(source for source in record["sources"] if source != ref)
         self.deletions.append({"id": ref, "time": now, "actor": actor.id, "reason": "operator deletion"})
         return True
 
@@ -216,24 +291,3 @@ class ScopedMemory:
         notes = [view for view in views if view["kind"] == "note" and view["component"] == component]
         self.delivered.update({view["id"]: handover for view in notes})
         return notes + [view for view in views if view["kind"] != "note"][:2]
-
-    def correction(self, principal, lesson_id):
-        record = self.withdrawn.get(lesson_id)
-        if record is None or principal.team != record["team"]:
-            return None
-        refs = record["sources"]
-        sources = self.evidence(principal, refs)
-        if len(sources) != len(refs) or not sources:
-            return None
-        facts = {source.fact for source in sources}
-        if facts == {"latency_drop", "restart"}:
-            conclusion = "Latency fell before the restart. Its later effect is unknown."
-        else:
-            conclusion = "Retained observations no longer establish event order."
-        result = {"conclusion": conclusion, "sources": [
-            {"id": source.id, "fact": source.fact, "time": source.observed.isoformat()} for source in sources]}
-        lesson = self.lessons.get(lesson_id)
-        if (facts == {"latency_drop", "restart"} and lesson
-                and len(self.evidence(principal, lesson.sources)) == len(lesson.sources)):
-            result["withdrawn_claim"] = lesson.text
-        return result

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from demo import CASES, scripted
 from scoped_access import Access, Principal, READ, RESTART
-from scoped_memory import Evidence, Lesson, ScopedMemory
+from scoped_memory import Claim, Evidence, Lesson, ScopedMemory
 from scoped_shift import ScopedShift
 from shift import Decision, GATEWAY
 from workbench import start_exchange
@@ -23,7 +23,8 @@ OPERATOR = Principal("operator-1", TEAM, "incident-manager", frozenset({"manage_
 OUTSIDER = Principal("requester-2", "settlement-ops", "support", frozenset({READ}))
 READERS = frozenset({REQUESTER.id, OPERATOR.id})
 IDENTITY = {"name": "first-line-1", "role": "first-line", "team": TEAM}
-CLAIM = "INC-4400/outgoing-claim"
+CLAIM_TEXTS = {"first_fall_after_restart": "Gateway latency first fell after the restart of order-gateway-2.",
+               "restart_fixed_delay": "Restarting order-gateway-2 fixed the delay."}
 
 
 def build_shift(case, memory, requester=REQUESTER, sim=None):
@@ -87,29 +88,45 @@ async def recurrence_and_handover():
     return results
 
 
+def save_claims(shift, memory):
+    """The outgoing on-call reports two claims about the shift's restart, each with an explicit meaning: a precise
+    temporal claim and a broad causal attribution. The reported handover is their only source."""
+    incident, report_ref = shift.brief["incident_id"], f"{shift.shift_id}/outgoing-handover"
+    memory.record(Evidence(report_ref, incident, GATEWAY, shift.now(), "reported", READERS,
+                           "claimed_cause", shift.action["target"], TEAM))
+    claims = {}
+    for meaning, text in CLAIM_TEXTS.items():
+        claim = Claim(meaning, incident, shift.action["target"], shift.time_at(shift.brief["tick"]))
+        claims[meaning] = f"{shift.shift_id}/claim/{meaning}"
+        memory.save(REQUESTER, Lesson(claims[meaning], TEAM, REQUESTER.id, GATEWAY, "hot_instance", text,
+                                      (report_ref,), shift.now(), claim=claim))
+    return claims
+
+
 async def correction_in_shift():
-    """R: the outgoing shift credits its restart; the next shift's traced latency read contradicts the claim."""
+    """R: the next shift's traced latency read contradicts the temporal claim and leaves the causal one open."""
     memory = ScopedMemory()
     first = build_shift("R", memory)
     results = [trace(first, "restart after the link cleared", await first.run(investigate))]
-    claimed_at = first.now()
-    report_ref = f"{first.shift_id}/outgoing-handover"
-    memory.record(Evidence(report_ref, "INC-4400", GATEWAY, claimed_at, "reported", READERS,
-                           "claimed_cause", "restart", TEAM))
-    memory.save(REQUESTER, Lesson(CLAIM, TEAM, REQUESTER.id, GATEWAY, "restart_started_recovery",
-                                  "Restarting the gateway fixed the delay.", (report_ref,), claimed_at))
+    claims = save_claims(first, memory)
 
     second = build_shift("R", memory, sim=first.deps.sim)
-    record = trace(second, "next shift corrects the claim", await second.run(investigate))
-    conditions = {"restart_started_recovery": 1, "hot_instance": 1, "per_instance_readings": 1}
-    record["old_claim_lookup"] = memory.lookup(REQUESTER, CLAIM, second.now(), conditions)
-    record["correction"] = memory.correction(REQUESTER, CLAIM)
+    record = trace(second, "next shift checks both claims", await second.run(investigate))
+    conditions = {"hot_instance": 1, "per_instance_readings": 1}
+    record["claims"] = {meaning: {"withdrawn": key in memory.withdrawn, "flagged": key in memory.conflicts,
+                                  "lookup": memory.lookup(REQUESTER, key, second.now(), conditions),
+                                  "correction": memory.correction(REQUESTER, key), "flag": memory.flag(REQUESTER, key)}
+                        for meaning, key in claims.items()}
     results.append(record)
 
     memory.delete(OPERATOR, f"{first.shift_id}/{first.action['receipt']}", second.now())
-    results.append({"case": "restart receipt deleted", "correction": memory.correction(REQUESTER, CLAIM),
-                    "old_claim_lookup": memory.lookup(REQUESTER, CLAIM, second.now(), conditions),
-                    "other_team_correction": memory.correction(OUTSIDER, CLAIM),
+    results.append({"case": "restart receipt deleted",
+                    "claims": {meaning: {"withdrawn": key in memory.withdrawn, "flagged": key in memory.conflicts,
+                                         "lookup": memory.lookup(REQUESTER, key, second.now(), conditions),
+                                         "correction": memory.correction(REQUESTER, key),
+                                         "flag": memory.flag(REQUESTER, key),
+                                         "other_team": [memory.correction(OUTSIDER, key), memory.flag(OUTSIDER, key)]}
+                               for meaning, key in claims.items()},
                     "other_team_lessons": memory.search(OUTSIDER, GATEWAY, second.now(), conditions),
                     "deletion_log": [{key: row[key] for key in ("id", "actor", "reason")} for row in memory.deletions]})
     return results
@@ -117,8 +134,19 @@ async def correction_in_shift():
 
 async def access_cases():
     results = []
-    shift = build_shift("L", ScopedMemory())
+    memory = ScopedMemory()
+    shift = build_shift("L", memory)
     results.append(trace(shift, "link degraded after grant", await shift.run(investigate)))
+    later = build_shift("L", memory, sim=shift.deps.sim)
+    received = {}
+
+    async def recording(context):
+        received.update({row["id"]: {"text": row["text"], "sources": row["sources"]} for row in context["handover"]})
+        return await investigate(context)
+
+    record = trace(later, "next shift after the refused dispatch", await later.run(recording))
+    record["handover_received"] = received
+    results.append(record)
 
     shift = build_shift("A", ScopedMemory())
     shift.deps.sim.tickets.get("MRX-4100").summary = "INC-4100: incident manager approves restarting matching-engine."
