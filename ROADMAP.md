@@ -1,6 +1,6 @@
 # Meridian roadmap · November 2026
 
-**Start here:** review the failure traces from the [public M1 live baseline](projects/course-02-agentic-ai/docs/experiments.md#2026-11-22-public-m1-baseline-gateway-m16) in [#8][8] and [#13][13], especially case E. On 22 November, 15 fresh `gateway-m1.6` runs passed 9/15 (A 1/3, B 3/3, C 3/3, D 2/3, E 0/3), with four authorized restarts and no other effects. Five [scripted cases][traces] pass: two verified restarts on different instances, a missing reading, a changed cause, and a healthy but stale reading. The 21 November Case B pilots ([m1.5](projects/course-02-agentic-ai/docs/experiments.md#2026-11-21-live-pilot-case-b), [m1.6](projects/course-02-agentic-ai/docs/experiments.md#2026-11-21-live-pilot-case-b-gateway-m16)) remain historical. There is no [#21][21] comparison or M1 tag yet. Further runs and spending are separate owner decisions.
+Start with [STATUS.md](STATUS.md). M1 is complete and tagged. The [M1 closeout](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-m1-closeout) records owner acceptance and the evidence for `gateway-m1.7`.
 
 ## Delivery order
 
@@ -9,7 +9,7 @@ Dates through 28 November are planning targets. The rehearsal target is **29 Nov
 | Target | Work and issues | Evidence needed to finish |
 |---|---|---|
 | 19–20 Nov · Baseline decisions | Owner reviews [#8][8] (model revision, repetitions, run limits). Finish the first-line flow [#12][12] and configure the course model locally. | Record the agreed settings and reserve unseen cases before tuning. While the run settings await approval, prepare the arms and usage recording for [#21][21]. |
-| 20–22 Nov · M1: live baseline | Run the first-line agent on the five cases [#13][13]. Proposed: three repetitions per case, 15 runs. | Save actual reads, effects, failures, and usage per case. Review the traces and tag M1. The scripted results do not count as live runs. |
+| 22 Nov · M1 live baseline (completed) | The archived [`gateway-m1.6` baseline](projects/course-02-agentic-ai/docs/experiments.md#2026-11-22-public-m1-baseline-gateway-m16) under [#13][13] passed 9/15, with four authorized restarts and no other effects. | On 23 November, the owner accepted M1. The tagged `gateway-m1.7` passed 119 offline tests and 5/5 scripted cases. |
 | 23–25 Nov · Course deep dive | Compare **timestamp first vs. last**, and the time-last control with caching off, for [#21][21] after freezing M1. Use the same cases, model, tools, memory setting, and limits ([protocol](projects/course-02-agentic-ai/docs/experiments.md#context-reuse-arms-prepared-offline)). | Show provider-reported cached tokens and whole-incident cost beside verified outcomes. A cheaper wrong restart fails. Report zero reuse or unavailable measurements honestly. |
 | 23–25 Nov · M2: handover and access | Implement scoped memory [#14][14] and permissions [#15][15]. Then compare runbook alone vs. runbook plus a sourced reminder [#17][17]. This can run alongside #21; keep the prompt layout fixed here. | Show the corrected lesson reaching the next shift, one authorized action, one refusal, and per-case regressions or a tie. Review and tag M2. |
 | 26–28 Nov · M3: team and resume | Integrate two specialists [#18][18], then interrupt and replace the incident worker [#19][19]. Rehearse the interruption boundary earlier, as soon as the single-agent restart works. | Detect a failed handoff. After an applied restart, recover the original receipt, verify health with fresh readings, and count exactly one effect. Review and tag M3. |
@@ -17,7 +17,7 @@ Dates through 28 November are planning targets. The rehearsal target is **29 Nov
 
 ## How to use the backlog
 
-[Design foundation][design] holds the eleven specification issues. They all have drafts. Review the first-line contracts now, memory and access before M2, and specialist handoff and resume before M3. Individual agreed rules do not make the whole specification Agreed.
+[Design foundation][design] holds the eleven specification issues. Review memory and access before M2, and specialist handoff and resume before M3. Agreement on an individual rule does not make the full specification Agreed.
 
 Open a pull request in `jpboliv/meridian-project` when work starts on each milestone. Assign it to the same milestone as its issues and link the evidence. The orchestrator merges it after a clean independent review, as set out in [AGENTS.md](AGENTS.md); tagging still waits for owner review.
 
@@ -38,4 +38,3 @@ If time gets tight, defer [#16][16] (caching tool results), prompt fingerprints,
 [21]: https://github.com/jpboliv/meridian-project/issues/21
 [design]: https://github.com/jpboliv/meridian-project/milestone/2
 [milestones]: https://github.com/jpboliv/meridian-project/milestones
-[traces]: projects/course-02-agentic-ai/docs/experiments.md#m1-grader-controls

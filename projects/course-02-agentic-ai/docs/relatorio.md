@@ -1,6 +1,6 @@
 # Meridian: o agente de primeira linha
 
-Projeto Agentic AI · entrega intermédia do M1 ([#20](https://github.com/jpboliv/meridian-project/issues/20)) · não é a entrega final nem uma versão marcada (tag)
+Projeto Agentic AI · o primeiro marco foi aceite e está identificado pela [tag `M1`](https://github.com/jpboliv/meridian-project/tree/M1). O [ZIP para revisão](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7100953195) foi testado antes da criação da tag e contém o mesmo código.
 
 **Para verificar por si, sem chave de API nem custos:** [Verificar no seu computador](#verificar-no-seu-computador).
 
@@ -8,7 +8,7 @@ Projeto Agentic AI · entrega intermédia do M1 ([#20](https://github.com/jpboli
 
 - **Problema e utilizador.** Um alerta diz «o gateway de ordens está lento». O engenheiro de serviço (on-call) da Meridian, uma bolsa simulada, precisa de saber o que aconteceu, se deve agir e se o serviço recuperou. Reiniciar a instância errada, ou afirmar uma recuperação sem medir, é pior do que passar o caso ao operador com a evidência certa.
 - **Estado.** O M1 está implementado: um agente trata um alerta até à recuperação medida ou a uma passagem ao operador. O M2 (memória entre turnos) e o M3 (especialistas e retoma) estão planeados.
-- **Resultado.** Sem modelo, com decisões programadas, os cinco casos públicos passam e reproduzem-se byte a byte. Com o modelo real, passaram 9 de 15 execuções. Os quatro reinícios foram todos aprovados pelo aprovador on-call simulado e feitos na instância certa, e não houve outros efeitos.
+- **Resultado.** Na versão marcada, `gateway-m1.7`, passaram 119 testes offline e os cinco casos públicos com decisões programadas. Os registos dos cinco casos foram reproduzidos byte a byte. Na linha de base arquivada, `gateway-m1.6`, passaram 9 de 15 execuções com o modelo real. Os quatro reinícios foram todos aprovados pelo aprovador on-call simulado e feitos na instância certa, e não houve outros efeitos.
 - **Verificação.** Este percurso foi [verificado num clone limpo](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7100207276), sem `.env` nem chave.
 
 ## Pergunta e proposta
@@ -77,7 +77,7 @@ flowchart LR
 
 As seis falhas pararam sem efeitos, mas uma paragem controlada e incompleta pode ainda falhar o caso. Na [execução 5](../first_line/live-baseline-m1.6-2026-11-22.jsonl#L5) (E), o modelo escolheu três vezes ler as ligações, que mostravam a reference-db degradada, mas nunca escolheu passá-la ao operador. Ao atingir o limite, o código fez uma passagem genérica. Falhou só uma das 11 verificações, `fresh independent link cited for investigation`. As outras falhas estão descritas no [registo da linha de base](experiments.md#2026-11-22-public-m1-baseline-gateway-m16). Os dois pilotos anteriores do caso B, um por revisão, são [históricos](experiments.md#2026-11-21-live-pilot-case-b) e ficam fora da linha de base.
 
-**Seguimento sem modelo (`gateway-m1.7`).** A revisão atual responde às falhas sem mudar os limites nem os avaliadores ([registo](experiments.md#2026-11-23-offline-follow-up-to-the-baseline-failures-gateway-m17)). Em E, as amostras podem estar desatualizadas e uma releitura não trazer uma amostra mais recente para nenhuma instância antes desatualizada. Nesse caso, o código termina as leituras do modelo e escreve a passagem ao operador. Cita a ligação, se só uma estiver em falha, ou nomeia as várias sem escolher. Se nenhuma estiver em falha, diz que nenhuma falha está estabelecida; se não as conseguir ler, diz que o estado é desconhecido. Em D, o alvo tem de ser exatamente uma ligação observada com falha. Os testes repetem sem rede as escolhas gravadas na linha de base:
+**Seguimento sem modelo (`gateway-m1.7`).** A revisão atual responde às falhas sem mudar os limites nem os avaliadores ([registo](experiments.md#2026-11-23-offline-follow-up-to-the-baseline-failures-gateway-m17)). Em E, as amostras podem estar desatualizadas e uma releitura não trazer uma amostra mais recente para nenhuma instância antes desatualizada. Nesse caso, o código termina as leituras do modelo e escreve a passagem ao operador. Usa os dados da própria releitura, se esta consultou as ligações. Caso contrário, o código volta a consultar as ligações. Cita a ligação, se só uma estiver em falha, ou nomeia as várias sem escolher. Se nenhuma estiver em falha, diz que nenhuma falha está estabelecida; se não as conseguir ler, diz que o estado é desconhecido. Em D, o alvo tem de ser exatamente uma ligação observada com falha. Os testes repetem sem rede as escolhas gravadas na linha de base:
 
 - as de E passam, mas quem cita a ligação é o código;
 - as de D3 só passam porque o teste fornece um alvo reparado válido;
