@@ -4,6 +4,8 @@ Projeto Agentic AI · o primeiro marco foi aceite e está identificado pela [tag
 
 **Para verificar por si, sem chave de API nem custos:** [Verificar no seu computador](#verificar-no-seu-computador).
 
+Há também uma [versão interativa](meridian-interativo.html), para abrir no browser sem rede: o caso de referência passo a passo, o percurso do M1 e os resultados do M2.
+
 ## Em resumo
 
 - **Problema e utilizador.** Um alerta diz «o gateway de ordens está lento». O engenheiro de serviço (on-call) da Meridian, uma bolsa simulada, precisa de saber o que aconteceu, se deve agir e se o serviço recuperou. Reiniciar a instância errada, ou afirmar uma recuperação sem medir, é pior do que passar o caso ao operador com a evidência certa.
