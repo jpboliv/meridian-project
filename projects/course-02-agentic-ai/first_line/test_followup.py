@@ -90,7 +90,9 @@ def test_an_unchanged_link_refresh_under_stale_samples_also_stops():
     assert len(fake.bodies) == 4 and [d["step"] for d in record["decisions"]] == ["tickets", "instances", "links", "links"]
     assert tools(record).count("check_link") == 4  # the model's two link reads; the harness adds none
     evidence = record["report"]["stale_evidence"]
+    # The stalled step was the links: the model's just-completed read is already after the stall and is reused.
     assert (evidence["refreshed"], evidence["links_read_by"]) == ("links", "model")
+    assert "superseded_link_ticks" not in evidence
     assert evidence["unchanged"] == {"reference-db": "degraded", "matching-engine": "up"}
     assert record["report"]["follow_up"]["observed_tick"] == record["reads_and_actions"][-2]["tick"]  # latest read
     assert record["passed"] and no_effect(record)
@@ -156,21 +158,109 @@ def test_unchanged_stale_samples_hand_over_only_what_the_links_establish(faults,
 
 
 def test_sample_progress_is_per_replica_and_needs_a_newer_sample_time():
+    """Progress means a replica that was stale before the refresh has a newer sample time. Sample times are
+    dateless `HH:MM`; these checks stay within one simulated day."""
     sim = demo.start_exchange(demo.CASES["E"])
     shift = Shift(demo.IncidentDeps(demo.MeridianTools(sim), identity=demo.identity_for("first-line")))
     stale = {"memory_pct": 55.0, "time": "09:00", "status": "running", "freshness": "stale"}
-    before = {"order-gateway-1": stale, "order-gateway-2": stale}
 
-    def after(**times):
-        shift.observations["instances"] = {
-            name: {**stale, "time": time, "freshness": "current" if time >= "10:00" else "stale"}
-            for name, time in times.items()}
-        return shift.no_new_evidence("instances", before)
+    def sample(time):
+        return {**stale, "time": time, "freshness": "current" if time >= "10:00" else "stale"}
 
-    assert after(**{"order-gateway-1": "10:09", "order-gateway-2": "09:00"}) == {"order-gateway-2": "09:00"}
-    assert after(**{"order-gateway-1": "09:05", "order-gateway-2": "09:05"}) == {}  # newer, though still stale
-    assert after(**{"order-gateway-1": "09:00", "order-gateway-2": "09:00"}) == dict.fromkeys(before, "09:00")
+    def refresh(before, **after):
+        shift.observations["instances"] = {name: sample(time) for name, time in after.items()}
+        return shift.no_new_evidence("instances", {name: sample(time) for name, time in before.items()})
+
+    both_stale = {"order-gateway-1": "09:00", "order-gateway-2": "09:00"}
+    # One outstanding replica advanced (to current, or to a newer but still stale sample): progress, although
+    # the other stayed stale. Both observations are kept and the model decides next.
+    assert refresh(both_stale, **{"order-gateway-1": "10:09", "order-gateway-2": "09:00"}) == {}
+    assert refresh(both_stale, **{"order-gateway-1": "09:05", "order-gateway-2": "09:00"}) == {}
+    assert refresh(both_stale, **{"order-gateway-1": "09:05", "order-gateway-2": "09:05"}) == {}
+    assert shift.observations["instances"]["order-gateway-2"]["time"] == "09:05"
+    # Nothing outstanding advanced: a stall, even when an already-current replica moved on.
+    assert refresh(both_stale, **both_stale) == both_stale
+    one_current = {"order-gateway-1": "10:09", "order-gateway-2": "09:00"}
+    assert refresh(one_current, **{"order-gateway-1": "10:12", "order-gateway-2": "09:00"}) == {
+        "order-gateway-2": "09:00"}
+    assert refresh(one_current, **{"order-gateway-1": "10:12", "order-gateway-2": "09:01"}) == {}
     assert shift.no_new_evidence("instances", None) == {}  # a first read is never a stall
+
+
+# --- E: the stall handover uses link evidence from after the stall ---------------------------------------------
+
+LINK_FIRST = ("tickets", "links", "instances", "instances")  # the model read the links before the stalled refresh
+DEGRADED_UNTIL_70 = [{"type": "link", "at": 65, "source": "order-gateway", "target": "reference-db",
+                      "mode": "degraded", "extra_latency_ms": 185, "until": 70}]
+NEWLY_DEGRADED_AT_70 = [{"type": "link", "at": 70, "source": "order-gateway", "target": "matching-engine",
+                         "mode": "degraded", "extra_latency_ms": 185}]
+
+
+def link_rows(shift):
+    return [(call.tick, call.args["target"], call.result.get("state")) for call in shift.tools.trace
+            if call.tool == "check_link"]
+
+
+def stall_after_link_read(faults=None, check_link=None):
+    """Public E with the link read before the stalled instance refresh (a changed fixture, not graded)."""
+    fake = FakeResponses(*steps(*LINK_FIRST))
+    changes = {} if faults is None else {"faults": faults}
+    if check_link:
+        changes["tools"] = load_scenario(demo.CASES["E"]).tools | {"check_link": check_link}
+    shift, report = modified("E", lambda sim: pilot_with(fake, 6, 512, model=LUNA).decider([]), **changes)
+    assert len(fake.bodies) == 4 and [d["step"] for d in shift.decisions] == list(LINK_FIRST)
+    sim = shift.deps.sim
+    assert report["status"] == "needs_operator" and report["action"] is None
+    assert not sim.approvals and not sim.executor.effects() and "recovery" not in report["observations"]
+    stall = max(call.tick for call in shift.tools.trace if call.tool == MONITOR)
+    return shift, report, stall
+
+
+@pytest.mark.parametrize("faults, before, after, cited", [
+    (None, "degraded", {"reference-db": "degraded", "matching-engine": "up"}, "reference-db"),
+    (DEGRADED_UNTIL_70, "degraded", {"reference-db": "up", "matching-engine": "up"}, None),
+    (NEWLY_DEGRADED_AT_70, "up", {"reference-db": "up", "matching-engine": "degraded"}, "matching-engine"),
+], ids=["still-degraded", "fault-cleared", "newly-degraded"])
+def test_a_stalled_instance_refresh_rereads_the_links_after_the_stall(faults, before, after, cited):
+    shift, report, stall = stall_after_link_read(faults)
+    rows = link_rows(shift)
+    # Before: the model's own read at ticks 67-68. After: one harness read at 75-76, once the refresh ending at
+    # tick 74 stalled. The fixtures change state at tick 70, between the two.
+    assert [tick for tick, _, _ in rows] == [67, 68, 75, 76] and stall == 74
+    assert rows[0][1:] == ("reference-db", before)
+    assert {target: state for _, target, state in rows[2:]} == after == {
+        name: row["state"] for name, row in report["observations"]["links"].items()}
+    evidence = report["stale_evidence"]
+    assert (evidence["refreshed"], evidence["links_read_by"], evidence["superseded_link_ticks"]) == (
+        "instances", "harness", [67, 68])
+    assert all(row["tick"] > stall for row in report["observations"]["links"].values())
+    assert "tick 67" not in report["next_step"] and "tick 68" not in report["next_step"]
+    if cited:
+        assert report["follow_up"] == {"operation": "investigate_link", "source": "order-gateway",
+                                       "target": cited, "observed_tick": rows[2 if cited == "reference-db" else 3][0]}
+        assert report["next_step"].startswith("Gateway samples from 09:00 do not establish current health. "
+                                              f"Investigate the degraded link from order-gateway to {cited}.")
+        return
+    assert report["follow_up"]["operation"] == "obtain_instance_readings"
+    assert "check_link reports reference-db up (tick 75), matching-engine up (tick 76). No fault established." in (
+        report["next_step"])
+
+
+@pytest.mark.parametrize("fail_call", [3, 4], ids=["first-fresh-row", "second-fresh-row"])
+def test_a_failed_fresh_link_read_cites_no_earlier_link_and_claims_no_health(fail_call):
+    shift, report, stall = stall_after_link_read(check_link={"fail_calls": [fail_call]})
+    rows = link_rows(shift)
+    assert rows[0][1:] == ("reference-db", "degraded") and rows[0][0] < stall  # the superseded read was faulty
+    assert "links" not in report["observations"] and shift.faulty_links() == []
+    assert report["observations"]["missing_link"].startswith("Missing link state for ")
+    assert report["stale_evidence"]["superseded_link_ticks"] == [67, 68]
+    assert report["follow_up"] == {"operation": "obtain_instance_readings", "source": MONITOR,
+                                   "targets": ["order-gateway-1", "order-gateway-2"]}
+    assert "Dependency link state is unknown." in report["next_step"]
+    assert "reference-db degraded" not in report["next_step"] and "No fault established" not in report["next_step"]
+    assert "Investigate the" not in report["next_step"]
+    candidate, problem = shift.restart_evidence()
+    assert problem == "unsupported"
 
 
 # --- D: the handover target is an exact observed faulty-link identifier ----------------------------------------
@@ -297,11 +387,12 @@ RAW = ("Exceeded maximum", "Model token limit", "Content filter", "sk-not-for-tr
     ((Wire(output_tokens=512), Wire(output_tokens=512)), "validation_exhausted", 5),  # no call at the ceiling
     ((Wire(reasoning=True, status=None, output_tokens=512),) * 2, "unknown", 5),      # no status: ambiguous
     ((Wire(reasoning=True, status="incomplete", reason="content_filter"),), "unknown", 4),
-    ((TRUNCATED, INVALID), "unknown", 5),                                # mixed: a limit, then an invalid answer
+    ((TRUNCATED, INVALID), "unknown", 5),                                # the earlier limit is not carried over
+    ((INVALID, TRUNCATED), "output_limit", 5),                           # the final explicit limit is definitive
     ((TRUNCATED, 500), "provider_error", 5),
     ((503,), "provider_error", 4),
 ], ids=["reasoning-at-limit", "truncated-call", "invalid-at-512", "empty-at-512", "no-status", "content-filter",
-        "mixed", "limit-then-500", "503"])
+        "limit-then-invalid", "invalid-then-limit", "limit-then-500", "503"])
 def test_a_failed_decision_is_handed_over_with_a_bounded_reason(final, code, sent):
     record, fake = live("A", *steps(*TICKS), *final)
     assert len(fake.bodies) == sent and record["pilot"]["requests_refused"] == 0

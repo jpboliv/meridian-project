@@ -59,8 +59,10 @@ def classify(error, attempts) -> str:
     `provider_error`: the SDK reports a provider, HTTP or transport failure. `output_limit`: the decision's last
     response says `incomplete` with reason `max_output_tokens`. `validation_exhausted`: every request for the
     decision (the first answer and its one repair) was a completed 200 response, and the output still failed
-    validation. Anything else, including mixed signals, is `unknown`. Token counts are never used: a completed
-    response that reports exactly the output limit is not evidence of truncation."""
+    validation. An explicit limit on the last response is definitive even after an invalid first answer; an
+    earlier truncated reply followed by an ambiguous invalid one is not classified from the earlier attempt and
+    stays `unknown`, as does anything else. Token counts are never used: a completed response that reports exactly
+    the output limit is not evidence of truncation."""
     if isinstance(error, ModelAPIError):
         return "provider_error"
     if not isinstance(error, UnexpectedModelBehavior) or not attempts or any(a["status"] != 200 for a in attempts):

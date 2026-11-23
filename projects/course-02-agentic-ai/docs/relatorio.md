@@ -76,7 +76,7 @@ Custo a preços padrão: 0,0001781 USD antes e 0,0001389 USD depois (estimativa,
 
 **Seguimento offline (23 nov. 2026, `gateway-m1.7`).** Os limites mantêm-se: 6 pedidos, 512 tokens e uma reparação. Os avaliadores e a linha de base também não mudaram.
 
-- **E.** Se uma nova leitura não trouxer uma amostra mais recente, o código para de reler. Consulta as ligações uma vez e passa ao operador a ligação degradada com a fonte, ou diz que não há falha estabelecida.
+- **E.** Se uma nova leitura não trouxer uma amostra mais recente para nenhuma instância que estava desatualizada, o código para de reler. Usa só ligações lidas depois dessa leitura: a do próprio modelo, se foi ele a reler as ligações; senão, consulta as ligações mais uma vez e descarta a leitura anterior. Passa ao operador a ligação degradada com a fonte, ou diz que não há falha estabelecida. Se essa consulta falhar, não cita nenhuma ligação e diz que o estado é desconhecido.
 - **D.** O alvo tem de ser exatamente uma ligação observada com falha. Caso contrário, há uma reparação e depois uma passagem segura, sem efeitos.
 - **A.** O modelo vê quando as observações atuais já suportam o reinício, com a mesma regra que o autoriza. Uma falha de decisão tem agora um código: limite de saída, validação esgotada, erro do fornecedor ou desconhecido.
 

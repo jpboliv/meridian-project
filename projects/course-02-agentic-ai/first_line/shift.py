@@ -221,16 +221,21 @@ class Shift:
         return report
 
     def no_new_evidence(self, step, before):
-        """After a successful refresh of `step` while gateway samples are stale: the replicas or links whose
-        evidence did not advance, or {} if the refresh brought new evidence. A sample advances only when its
-        own time is newer; a later poll time or source tick alone is not progress. The value may be the same.
-        Sample times are same-day `HH:MM` labels, so string order is time order."""
+        """After a successful refresh of `step` while gateway samples are stale: the stale replicas or links whose
+        evidence did not advance, or {} if the refresh brought new evidence. An instance refresh is progress when
+        any replica that was stale before it has a newer sample time (the value may be the same), even if another
+        stays stale; a replica that was already current moving on is not. A later poll time or source tick alone
+        is not progress. Sample times are `HH:MM` labels without a date, so this order holds only while the
+        compared samples fall within one simulated day (no midnight crossing)."""
         samples = self.observations.get("instances", {})
         if before is None or not any(s["freshness"] == "stale" for s in samples.values()):
             return {}
         if step == "instances":
-            return {name: s["time"] for name, s in samples.items()
-                    if s["freshness"] == "stale" and name in before and not s["time"] > before[name]["time"]}
+            outstanding = {name: s["time"] for name, s in before.items() if s["freshness"] == "stale"}
+            if any(name in samples and samples[name]["time"] > time for name, time in outstanding.items()):
+                return {}
+            return {name: samples[name]["time"] for name in outstanding
+                    if name in samples and samples[name]["freshness"] == "stale"}
         if step == "links":
             links = self.observations["links"]
             if {k: v["state"] for k, v in links.items()} == {k: v["state"] for k, v in before.items()}:
@@ -238,15 +243,22 @@ class Shift:
         return {}
 
     async def stale_handover(self, step, unchanged):
-        """Agreed stale/missing-reading rule, applied by code once a refresh brings nothing new: consult the
-        independent link monitor once (unless already observed), then hand over a single observed faulty link
-        with its source, or name the unresolved evidence. Never a restart or a recovery claim."""
+        """Agreed stale/missing-reading rule, applied by code once a refresh brings nothing new: hand over a single
+        faulty link observed after the stall, with its source, or name the unresolved evidence. Never a restart or
+        a recovery claim. The link evidence must not predate the stalled refresh: after a stalled link refresh the
+        model's own link read is current and is reused; after a stalled instance refresh code consults the
+        independent link monitor once, replacing any earlier link read. If that read fails, no link is cited."""
         record = {"rule": "refresh brought no new evidence while gateway samples are stale", "refreshed": step,
                   "unchanged": unchanged,
                   "stale_samples": {n: s["time"] for n, s in self.observations["instances"].items()
                                     if s["freshness"] == "stale"},
-                  "links_read_by": "model" if "links" in self.observations else "harness"}
-        if "links" not in self.observations:
+                  "links_read_by": "model" if step == "links" else "harness"}
+        if step != "links":
+            earlier = self.observations.pop("links", None)
+            self.observations.pop("missing_link", None)
+            self.last_read_tick.pop("links", None)
+            if earlier:
+                record["superseded_link_ticks"] = sorted({row["tick"] for row in earlier.values()})
             try:
                 self.observations["links"] = await self.investigate("links")
                 self.last_read_tick["links"] = self.tools.trace[-1].tick
@@ -259,8 +271,11 @@ class Shift:
             replicas = list(record["stale_samples"])
             seen = ", ".join(f"{name} {row['state']} (tick {row['tick']})"
                              for name, row in self.observations.get("links", {}).items())
-            finding = (f"check_link reports {seen}. " if seen else f"{self.observations['missing_link']}. ")
-            finding += "Investigate the faulty links. " if faulty else "No fault established. "
+            if seen:
+                finding = f"check_link reports {seen}. "
+                finding += "Investigate the faulty links. " if faulty else "No fault established. "
+            else:  # a failed fresh read establishes neither a fault nor healthy links
+                finding = f"{self.observations['missing_link']}. Dependency link state is unknown. "
             report = self.handover(f"Gateway samples for {', '.join(replicas)} still end at "
                                    f"{', '.join(self.stale_times())} and do not establish current health. {finding}"
                                    f"Restore current per-instance readings before comparing instances or restarting.")
