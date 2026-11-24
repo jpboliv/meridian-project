@@ -1,6 +1,6 @@
 # Meridian roadmap · November 2026
 
-Start with [STATUS.md](STATUS.md). M1 is complete and tagged. The [M1 closeout](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-m1-closeout) records owner acceptance and the evidence for `gateway-m1.7`.
+All three milestones are tagged: [M1](https://github.com/jpboliv/meridian-project/tree/M1), [M2](https://github.com/jpboliv/meridian-project/tree/M2), and [M3](https://github.com/jpboliv/meridian-project/tree/M3). See [STATUS.md](STATUS.md) for the handoff. The remaining submission work is the [clean-clone rehearsal and delivery](https://github.com/jpboliv/meridian-project/issues/20).
 
 ## Delivery order
 
