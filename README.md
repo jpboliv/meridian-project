@@ -4,7 +4,7 @@ An order gateway is slow. Yesterday, restarting one instance helped. Should the 
 
 I built this project during Luís Noronha’s *Agentic AI: Da Arquitetura à Implementação* course. The [original course repository](https://github.com/luisnoronha/gen-ai-course) supplies the exchange simulator, tools and Model Context Protocol (MCP) servers, runbooks, approver, executor, and base evaluator. My work is in [`projects/course-02-agentic-ai`](projects/course-02-agentic-ai/): the agent’s decision loop, memory and permission rules, specialist handoffs, worker recovery, and the cases and graders that test them.
 
-[Run the demo](#run-the-demo) · [Read the results](#what-the-evaluations-showed) · [Browse the experiment log](projects/course-02-agentic-ai/docs/experiments.md). For the illustrated case study, open the [one-page HTML report](projects/course-02-agentic-ai/docs/meridian-interativo.html) in a browser from a local copy. It works offline without JavaScript.
+[Run the demo](#run-the-demo) · [Read the results](#what-the-evaluations-showed) · [Browse the experiment log](projects/course-02-agentic-ai/docs/experiments.md). For the illustrated case study, open the [one-page HTML report](projects/course-02-agentic-ai/docs/meridian-interactive.html) in a browser from a local copy. It works offline without JavaScript.
 
 ## Where the decisions happen
 

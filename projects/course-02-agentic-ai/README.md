@@ -9,7 +9,7 @@ It grows in three milestones:
 2. Production On-Call Agent (sessions 4–6)
 3. 24/7 Incident Response Center (sessions 7–9)
 
-For an overview of all three milestones, read the [case study](docs/meridian-interativo.html) or run the [offline demo](../../README.md#run-the-demo). This guide covers individual cases, live-run settings, and trace reproduction.
+For an overview of all three milestones, read the [case study](docs/meridian-interactive.html) or run the [offline demo](../../README.md#run-the-demo). This guide covers individual cases, live-run settings, and trace reproduction.
 
 Start with the [project goals](docs/project.md) and [reference incident](docs/reference-incident.md). Follow the [roadmap](../../ROADMAP.md) for milestone outcomes.
 
