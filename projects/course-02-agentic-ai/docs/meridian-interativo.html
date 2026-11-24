@@ -37,7 +37,7 @@
   <section>
     <h2>M2 · O que vale uma pista do turno anterior?</h2>
     <p>No caso C, a instância afetada passou a ser a 1. Comparámos o procedimento completo com e sem um lembrete do turno anterior. Nos três pares em que o modelo viu o lembrete, fez as mesmas seis leituras, pela mesma ordem, e reiniciou a instância certa nas duas versões. Passaram as <a href="../first_line/public-results-m2-2026-11-23/reminder-ledger.jsonl">12 execuções do estudo</a>. Mantemos o procedimento sem lembrete por defeito.</p>
-    <p>Noutra experiência, mudámos a posição da hora no pedido ao modelo e comparámos a cache automática com a cache desligada. Passaram as <a href="../first_line/public-results-m2-2026-11-23/cache-slots.jsonl">45 execuções</a>. Nos 157 pedidos desta experiência, o fornecedor registou zero leituras e escritas na cache. Não observámos uma poupança por reutilização.</p>
+    <p>Noutra experiência com o modelo real, mudámos a posição da hora no pedido e comparámos a cache automática com a cache desligada. Passaram as <a href="../first_line/public-results-m2-2026-11-23/cache-slots.jsonl">45 execuções</a>. Os 157 pedidos tinham entre 571 e 803 tokens de entrada, abaixo do mínimo de 1 024 para usar a cache. Não houve leituras nem escritas na cache, pelo que não medimos quanto se poupa quando há reutilização.</p>
     <figure>
       <figcaption>Passagem de turno: exemplo de referência</figcaption>
       <ol>
@@ -51,7 +51,7 @@
   <section>
     <h2>M3 · Retomar sem repetir o reinício</h2>
     <p>Nos ensaios programados, um especialista consultou a infraestrutura e outro a aplicação. Nos casos A e D, a equipa chegou à mesma decisão que o agente sozinho, com mais uma chamada a uma ferramenta por caso. Quando a aplicação não respondeu, o agente indicou ao operador que faltava essa informação.</p>
-    <p>No <a href="experiments.md#2026-11-23-m3-worker-resume-offline">ensaio de retoma</a>, a instância já tinha reiniciado quando o agente parou, antes de guardar o recibo. O simulador continuou a funcionar. O agente substituto encontrou o recibo original, ACT-001, e confirmou a recuperação com três leituras novas. Houve um só reinício.</p>
+    <p>No <a href="experiments.md#2026-11-23-m3-worker-resume-offline">ensaio programado de retoma</a>, a instância já tinha reiniciado quando o agente parou, antes de guardar o recibo. O simulador continuou a funcionar. O agente substituto encontrou o recibo original, ACT-001, e confirmou a recuperação com três leituras novas. Houve um só reinício.</p>
   </section>
   <details><summary>Como verificar os resultados</summary><p>O <a href="relatorio.md#verificar-no-seu-computador">guia de verificação</a> e o <a href="experiments.md">registo das experiências</a> incluem os comandos para reproduzir a análise sem chave de API. Esta página pode ser lida isoladamente; para abrir as fontes locais, use a cópia que acompanha o repositório.</p></details>
 </main>
