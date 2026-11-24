@@ -4,7 +4,7 @@ Projeto Agentic AI · o primeiro marco foi aceite e está identificado pela [tag
 
 **Para verificar por si, sem chave de API nem custos:** [Verificar no seu computador](#verificar-no-seu-computador).
 
-O [relatório breve para Luís](meridian-interativo.html) mostra quando o agente reinicia ou passa o caso ao operador, dos resultados do M1 e do M2 ao ensaio programado e provisório do M3. Abre no navegador sem rede nem JavaScript. A redação desta síntese contou com assistência de IA.
+O [relatório breve para Luís](meridian-interativo.html) reúne as decisões e os resultados dos três marcos numa página. Abre no navegador sem rede nem JavaScript.
 
 ## Em resumo
 
