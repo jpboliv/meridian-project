@@ -4,12 +4,12 @@ Projeto Agentic AI · o primeiro marco foi aceite e está identificado pela [tag
 
 **Para verificar por si, sem chave de API nem custos:** [Verificar no seu computador](#verificar-no-seu-computador).
 
-Há também uma [versão interativa](meridian-interativo.html), para abrir no browser sem rede: o caso de referência passo a passo, o percurso do M1 e os resultados do M2.
+O [relatório breve para Luís](meridian-interativo.html) reúne as decisões e os resultados dos três marcos numa página. Abre no navegador sem rede nem JavaScript.
 
 ## Em resumo
 
 - **Problema e utilizador.** Um alerta diz «o gateway de ordens está lento». O engenheiro de serviço (on-call) da Meridian, uma bolsa simulada, precisa de saber o que aconteceu, se deve agir e se o serviço recuperou. Reiniciar a instância errada, ou afirmar uma recuperação sem medir, é pior do que passar o caso ao operador com a evidência certa.
-- **Estado.** O M1 está implementado. No M2, o turno seguinte recebe pistas com fonte e só as usa quando as leituras atuais o justificam. As duas [comparações do M2](experiments.md#2026-11-23-live-m2-results) terminaram. O M3 (especialistas e retoma) continua planeado.
+- **Estado.** Os três marcos estão concluídos. No M2, o turno seguinte recebe pistas com fonte e verifica se ainda se aplicam. No [M3](https://github.com/jpboliv/meridian-project/tree/M3), dois especialistas investigam o alerta. Se o agente que pediu o reinício parar, outro consulta o recibo antes de decidir o que fazer.
 - **Resultado.** Na versão marcada, `gateway-m1.7`, passaram 119 testes offline e os cinco casos públicos com decisões programadas. Os registos dos cinco casos foram reproduzidos byte a byte. Na linha de base arquivada, `gateway-m1.6`, passaram 9 de 15 execuções com o modelo real. Os quatro reinícios foram todos aprovados pelo aprovador on-call simulado e feitos na instância certa, e não houve outros efeitos.
 - **Verificação.** Este percurso foi [verificado num clone limpo](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7100207276), sem `.env` nem chave.
 - **Resultado do M2.** Nas 12 execuções com e sem lembrete, passaram todos os casos. Em C, o modelo fez as mesmas seis leituras, pela mesma ordem, nas duas versões. Em D, a condição do lembrete não se verificou. Mantemos o runbook sem lembrete por defeito. Nas 45 execuções da comparação de cache também passaram todos os casos; o fornecedor registou zero leituras e zero escritas na cache. O custo estimado das duas experiências foi de 0,019345 USD.
@@ -96,7 +96,7 @@ Em A3 ([execução 11](../first_line/live-baseline-m1.6-2026-11-22.jsonl#L11)), 
 
 - Benefício da cache em incidentes com pedidos mais longos: na [comparação #21](https://github.com/jpboliv/meridian-project/issues/21), nenhum dos 157 pedidos chegou aos 1024 tokens de entrada necessários. O custo variou mesmo sem reutilização.
 - Benefício geral da memória: o lembrete não poupou leituras nos três pares de C. A correção do [reinício creditado erradamente](reference-incident.md#the-wrongly-credited-restart) foi verificada separadamente, sem modelo.
-- M3: um líder que integra dois especialistas e um trabalhador persistente que retoma sem repetir o reinício.
+- Retoma após perda do simulador inteiro. No [teste do M3](experiments.md#2026-11-23-m3-worker-resume-offline), o simulador continuou a funcionar: o agente substituto encontrou o recibo ACT-001, verificou três leituras novas e não repetiu o reinício. As decisões foram programadas.
 - Limites: as horas das amostras não têm data, por isso a regra de E só compara amostras do mesmo dia simulado. Os casos reservados não foram executados.
 
 O ensaio completo a partir de um clone limpo (sucesso, falha controlada e retoma) está marcado para 29 de novembro. A entrega é a 30 de novembro de 2026, às 23:59 de Lisboa.

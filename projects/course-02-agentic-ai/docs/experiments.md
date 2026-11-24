@@ -1,6 +1,6 @@
 # 2026-11-23 M3 worker resume, offline
 
-[#19](https://github.com/jpboliv/meridian-project/issues/19) applies the agreed [interruption and resume contract](specs/execution.md) to the integrated #18 lead, in draft [PR #41](https://github.com/jpboliv/meridian-project/pull/41). Every decision is scripted code. No model was called, no key was read, and nothing was spent. M3 is not tagged: that waits for review and the owner.
+[#19](https://github.com/jpboliv/meridian-project/issues/19) applies the agreed [interruption and resume contract](specs/execution.md) to the integrated #18 lead. [PR #41](https://github.com/jpboliv/meridian-project/pull/41) merged after [independent review](https://github.com/jpboliv/meridian-project/pull/41#issuecomment-7117217934); the annotated [M3 release](https://github.com/jpboliv/meridian-project/tree/M3) points to `b409006`. Every decision in these runs was scripted. No incident model was called.
 
 **Is this necessary?** The supplied executor's `status` returns `unknown_key` for a key it never saw and also for a rejected request. It also has no notion of a request in flight. The contract's table needs those cases told apart, so a small ledger records every keyed request beside the executor. The checkpoint is one JSON file. No simulator or M1/M2 file changes. The code is [`team/resume.py`](../team/resume.py) and the runs are in [`team/resume_demo.py`](../team/resume_demo.py).
 
