@@ -1,5 +1,7 @@
 # 2026-11-23 M3 worker resume, offline
 
+24 November, [post-release #43: second interruption](../post_release/README.md). The reconciled receipt refunded one tool call on M3. Saving its current balance fixes it: 16/32 calls to verify recovery in A, 21/32 to hand over in N, one restart each. Tagged public evidence still replays byte for byte. Local follow-up awaiting owner-orchestrated review.
+
 [#19](https://github.com/jpboliv/meridian-project/issues/19) applies the agreed [interruption and resume contract](specs/execution.md) to the integrated #18 lead, in draft [PR #41](https://github.com/jpboliv/meridian-project/pull/41). Every decision is scripted code. No model was called, no key was read, and nothing was spent. M3 is not tagged: that waits for review and the owner.
 
 **Is this necessary?** The supplied executor's `status` returns `unknown_key` for a key it never saw and also for a rejected request. It also has no notion of a request in flight. The contract's table needs those cases told apart, so a small ledger records every keyed request beside the executor. The checkpoint is one JSON file. No simulator or M1/M2 file changes. The code is [`team/resume.py`](../team/resume.py) and the runs are in [`team/resume_demo.py`](../team/resume_demo.py).

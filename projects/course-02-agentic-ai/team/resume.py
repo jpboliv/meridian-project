@@ -213,7 +213,8 @@ class DurableLead(TeamLead):
                        "saved_tick": self.deps.sim.state.tick})
 
     def save_receipt(self, record, receipt):
-        self.save({**record, "state": "receipt_saved", "worker": self.worker, "saved_tick": self.deps.sim.state.tick,
+        self.save({**record, "version": 3, "remaining_budget": self.budget.remaining(),
+                   "state": "receipt_saved", "worker": self.worker, "saved_tick": self.deps.sim.state.tick,
                    "receipt": {key: receipt[key] for key in ("action_id", "tick", "time", "action", "target",
                                                              "idempotency_key", "confirmation_ref", "outcome")}})
 
@@ -249,7 +250,13 @@ class ReplacementLead(DurableLead):
         if (record["incident"], record["action"]) != (self.brief["incident_id"], RESTART):
             return self.unknown("The checkpoint names another incident or action.")
         self.resume_record = record
-        self.budget = self.tools.budget = Budget(record["remaining_budget"] - DISPATCH_RESERVED)
+        balance = record["remaining_budget"]
+        if record["state"] == "receipt_saved":
+            if record["version"] != 3:
+                return self.handover("Receipt saved, but remaining verification budget is unknown. Check current health.")
+        else:
+            balance -= DISPATCH_RESERVED  # intent was saved before the dispatch charge
+        self.budget = self.tools.budget = Budget(balance)
         # Grants live only in the stopped worker's access state. The approval ledger survives; the grant is never
         # restored from the checkpoint, so any new dispatch needs a current on-call grant.
         granted = next((row for row in self.deps.sim.approvals if row["approval_ref"] == record["approval"]), None)
