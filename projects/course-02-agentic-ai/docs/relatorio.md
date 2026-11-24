@@ -4,7 +4,7 @@ Projeto Agentic AI · o primeiro marco foi aceite e está identificado pela [tag
 
 **Para verificar por si, sem chave de API nem custos:** [Verificar no seu computador](#verificar-no-seu-computador).
 
-O [relatório breve para Luís](meridian-interativo.html) reúne as decisões e os resultados dos três marcos numa página. Abre no navegador sem rede nem JavaScript.
+O [estudo de caso em inglês](meridian-interactive.html) reúne as decisões e os resultados dos três marcos numa página. Abre no navegador sem rede nem JavaScript.
 
 ## Em resumo
 

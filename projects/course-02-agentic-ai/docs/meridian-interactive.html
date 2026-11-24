@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian · When should an incident agent restart a service?</title>
+<style>
+  :root { color: #202d32; background: #faf9f5; font: 112.5%/1.55 system-ui, sans-serif; }
+  body { max-width: 66ch; margin: auto; padding: 2rem clamp(1rem, 4vw, 3rem); }
+  h1, h2 { font-family: Georgia, serif; text-wrap: balance; line-height: 1.15; }
+  h1 { font-size: clamp(2rem, 5vw, 3rem); margin: .3em 0; }
+  h2 { font-size: 1.45rem; margin: 1.35em 0 .4em; }
+  p { margin: .65em 0; }
+  a { color: #075b64; text-underline-offset: .15em; }
+  a:focus-visible { outline: 2px solid; outline-offset: 2px; }
+  figure { margin: 1.5rem 0; padding: 1rem; background: #e7f1ee; }
+  figcaption { font-weight: 650; }
+  details { margin-block: 1.4rem; }
+  summary { cursor: pointer; color: #075b64; }
+  ol { list-style: none; padding: 0; margin: .8em 0; border-inline-start: 2px solid #377369; }
+  li { padding: .25em .75em; }
+  time { font-weight: bold; margin-right: .4em; }
+  footer { border-top: 1px solid #a6b7b1; margin-top: 2rem; padding-top: 1rem; font-size: .9em; }
+</style>
+<main>
+  <header>
+    <p>Meridian · Incident response case study</p>
+    <h1>When should an incident agent restart a service?</h1>
+    <p>Orders are slow to reach a simulated stock exchange. The last time this happened, one gateway instance ran low on memory. This time, the database link could be slow. What evidence does the on-call agent need before it acts? And if it stops halfway through a restart, how does the next worker know what happened?</p>
+  </header>
+
+  <section>
+    <h2>M1 · Decide from current evidence</h2>
+    <p>In case A, only instance 2 showed high memory use. Both links were healthy. The agent obtained approval, restarted that instance, and confirmed recovery with three consecutive readings. In B, the monitor timed out twice on instance 1. Instance 2 was never measured. The useful outcome was a handoff: get readings for both instances, restart neither.</p>
+    <p>The <a href="../first_line/live-baseline-m1.6-2026-11-22.jsonl">live model baseline</a> passed 9 of 15 runs on m1.6. On m1.7, <a href="../first_line/offline-traces-m1.7.jsonl">all five scripted cases</a> passed. Those five cases test the decision rules. They do not establish that the model improved.</p>
+  </section>
+
+  <section>
+    <h2>M2 · Is yesterday’s clue worth carrying forward?</h2>
+    <p>In C, the fault moved to instance 1. The model received the full runbook either with or without a reminder from the previous shift. In the three pairs where it saw the reminder, it made the same six reads in the same order and restarted the right instance either way. All <a href="../first_line/public-results-m2-2026-11-23/reminder-ledger.jsonl">12 runs</a> passed. The runbook alone remains the default.</p>
+    <p>A separate <a href="../first_line/public-results-m2-2026-11-23/cache-slots.jsonl">45-run study</a> varied the position of the timestamp and compared automatic caching with caching off. All runs passed. The 157 requests contained 571 to 803 input tokens each, below the provider’s 1,024-token minimum. With no cache reads or writes, the study could not measure savings from reuse.</p>
+    <figure>
+      <figcaption>A handoff worth correcting: did the restart start the recovery?</figcaption>
+      <ol>
+        <li><time>10:02</time> <a href="cases/restart/latency.md">Response time</a> drops from 880 to 740 ms.</li>
+        <li><time>10:05</time> The <a href="cases/restart/actions.md">action log</a> records the restart.</li>
+      </ol>
+      <p>In this reference timeline, the restart did not start the drop. The timing alone cannot tell the next shift whether it helped later.</p>
+    </figure>
+  </section>
+
+  <section>
+    <h2>M3 · Resume the investigation without restarting twice</h2>
+    <p>Two scripted specialists investigated the application and infrastructure. In A and D, the team reached the same decision as the single agent with one extra tool call per case. When the application specialist did not reply, the lead told the operator which evidence was missing.</p>
+    <p>In the <a href="experiments.md#2026-11-23-m3-worker-resume-offline">interruption test</a>, the worker stopped after the restart but before it saved the receipt. The simulator kept running. The replacement found the original receipt, ACT-001, and confirmed recovery from three fresh readings. There was one restart. When the link degraded instead, the same receipt led to a handoff, not a claim of recovery.</p>
+  </section>
+  <details><summary>Reproduce the results</summary><p>Start with the <a href="../../../README.md#run-the-demo">offline walkthrough</a>. The <a href="experiments.md">experiment log</a> includes the inputs, expected outcomes, and recorded results. No API key is needed for replay. To follow the evidence links offline, open this page from a copy of the repository.</p></details>
+</main>
+<footer>Built during Luís Noronha’s Agentic AI course. The <a href="https://github.com/luisnoronha/gen-ai-course">original course repository</a> provides the simulator, tools, runbooks, and base evaluator. This project adds the decision rules, handoff and recovery logic, evaluation cases, and measurements.</footer>
+</html>

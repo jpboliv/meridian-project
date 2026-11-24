@@ -1,5 +1,7 @@
 # Current focus
 
+24 November, [delivery #20](https://github.com/jpboliv/meridian-project/issues/20): the [README](README.md) and [one-page case study](projects/course-02-agentic-ai/docs/meridian-interactive.html) now introduce Meridian in English. Both credit the [original course repository](https://github.com/luisnoronha/gen-ai-course) and distinguish its simulator and base evaluator from the project’s decision rules and evaluations.
+
 24 November, [delivery #20](https://github.com/jpboliv/meridian-project/issues/20): the [root README](README.md) now opens with the three-milestone report and the offline A, B and M3 resume walkthrough. The lab checks and resume command passed from a fresh local clone at `3d98c73`. The README includes the AI-use disclosure.
 
 24 November, [post-release test: a second interruption](projects/course-02-agentic-ai/post_release/README.md). After 14 of 32 tool calls, the third worker received 19 rather than the remaining 18. Saving the current balance with the receipt fixes the count. In A the third worker verified recovery; in N it handed over. Each case had one restart. The monitor now reports unknown effects on M3 line 15: the new simulator’s empty audit cannot account for the original ledger’s completed restart. See [PR #44](https://github.com/jpboliv/meridian-project/pull/44) for the trace monitor, evidence and limits.
@@ -8,7 +10,7 @@ All three releases are tagged: [M1 `f07fb1e`](https://github.com/jpboliv/meridia
 
 In the [scripted M3 demonstrations](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-m3-worker-resume-offline), two specialists reached the single agent’s outcomes on A and D with one extra tool call each. When a worker stopped after restart ACT-001, the replacement recovered the original receipt and verified health at ticks 28–30. Exactly one restart occurred. A new ledger with the same name led to handover, not a resend. This was an in-process worker replacement in a surviving simulator. All 296 offline tests passed; all 19 M3 records and the historical traces reproduced byte for byte.
 
-[Short report for Luís](projects/course-02-agentic-ai/docs/meridian-interativo.html) ([#20](https://github.com/jpboliv/meridian-project/issues/20)): one offline page in Portuguese with the decisions and evidence from all three releases. The reference timeline distinguishes the observed latency drop from an unproven cause. The reader can follow the cases without operating a player.
+[Short report for Luís](https://github.com/jpboliv/meridian-project/blob/3d98c73/projects/course-02-agentic-ai/docs/meridian-interativo.html) ([#20](https://github.com/jpboliv/meridian-project/issues/20)): one offline page in Portuguese with the decisions and evidence from all three releases. The reference timeline distinguishes the observed latency drop from an unproven cause. The reader can follow the cases without operating a player.
 
 M2 is complete. The [owner accepted the release](https://github.com/jpboliv/meridian-project/issues/17#issuecomment-7114986712); the annotated [M2 tag](https://github.com/jpboliv/meridian-project/tree/M2) points to `658b9c0`, and [#17](https://github.com/jpboliv/meridian-project/issues/17) is closed.
 
