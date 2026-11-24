@@ -19,6 +19,16 @@ def test_tagged_records_without_verdicts():
     assert inspect(records[-2])['recovery'] == 'non-recovery handover'
     assert inspect(records[-1])['effects'] == 'duplicate'
     assert inspect(records[13])['recovery'] == 'unknown'
+    assert inspect(records[10])['effects'] == inspect(records[11])['effects'] == 'none'
+    assert inspect(records[14]) == {'effects': 'unknown', 'recovery': 'unknown'}
+
+    # A retry or a contradictory row cannot account for the stopped ledger's completion.
+    record = records[8]
+    applied, = record['executor_audit']
+    for change in ({'key': applied['key'] + ':retry'}, {'effect': False}, {'outcome': 'rejected'},
+                   {'target': 'other'}, {'tick': applied['tick'] + 1}):
+        record['executor_audit'] = [applied | change]
+        assert inspect(record)['effects'] == 'unknown', change
 
 
 @pytest.mark.parametrize('case,status,used', [('A', 'supported', 2), ('N', 'non-recovery handover', 7)])

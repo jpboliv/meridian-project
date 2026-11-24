@@ -31,7 +31,14 @@ def inspect(record):
     audit = record.get('executor_audit')
     rows = [r for r in audit or [] if key and r.get('key') in (key, key + ':retry') and r.get('effect') is True]
     ids = {r['action_id'] for r in rows}
-    if len(ids) > 1:
+    intent = original.get(key, {})
+    target = intent.get('binding', {}).get('parameters', {}).get('target')
+    if intent.get('state') == 'completed' and not any(
+            r['key'] == key and r.get('outcome') == 'completed'
+            and ('target' not in r or r['target'] == target)
+            and ('tick' not in r or r['tick'] == intent.get('received_tick')) for r in rows):
+        effects = 'unknown'  # the final audit does not account for the original completion
+    elif len(ids) > 1:
         effects = 'duplicate'
     elif not key or audit is None or any(r.get('effect') is not False and r not in rows for r in audit):
         effects = 'unknown'
