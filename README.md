@@ -1,74 +1,78 @@
-# Meridian: quando reiniciar e quando chamar o operador
+# Meridian: incident response with agents
 
-[Relatório para Luís: os três marcos numa página](projects/course-02-agentic-ai/docs/meridian-interativo.html). Depois de clonar ou extrair o projeto, abra o ficheiro HTML no navegador. Funciona sem rede nem JavaScript.
+An order gateway is slow. Yesterday, restarting one instance helped. Should the on-call agent restart it again? Meridian investigates that question in a simulated stock exchange. A past incident can suggest where to look. Only current readings can justify a restart, and only readings *after* the restart can establish recovery.
 
-A Meridian é uma bolsa simulada. Quando a entrada de ordens fica lenta, o engenheiro de serviço precisa de decidir se deve reiniciar uma instância ou investigar outra causa. Uma pista do turno anterior pode orientar a investigação. Só as leituras atuais podem justificar o reinício.
+I built this project during Luís Noronha’s *Agentic AI: Da Arquitetura à Implementação* course. The [original course repository](https://github.com/luisnoronha/gen-ai-course) supplies the exchange simulator, tools and Model Context Protocol (MCP) servers, runbooks, approver, executor, and base evaluator. My work is in [`projects/course-02-agentic-ai`](projects/course-02-agentic-ai/): the agent’s decision loop, memory and permission rules, specialist handoffs, worker recovery, and the cases and graders that test them.
 
-## Demonstração em cinco minutos
+[Run the demo](#run-the-demo) · [Read the results](#what-the-evaluations-showed) · [Browse the experiment log](projects/course-02-agentic-ai/docs/experiments.md). For the illustrated case study, open the [one-page HTML report](projects/course-02-agentic-ai/docs/meridian-interativo.html) in a browser from a local copy. It works offline without JavaScript.
 
-Precisa de [uv](https://docs.astral.sh/uv/getting-started/installation/) e de acesso à Internet para a instalação inicial. A demonstração usa dados locais e decisões programadas. Não precisa de `.env`, chave de API nem chamadas pagas.
+## Where the decisions happen
 
-Se recebeu acesso ao repositório privado, obtenha o código:
+| Role | What it decides |
+|---|---|
+| First-line agent | In live runs, a model chooses what to read and proposes a restart or a handoff. The offline demo uses a fixed decision sequence. |
+| Incident lead and two specialists | In the scripted team, the application specialist reads tickets, changes, and logs. The infrastructure specialist reads instance and link metrics. The lead checks their sources and can ask one follow-up if findings conflict. |
+| Application code | Checks fresh evidence and permissions, requests approval for the exact target, records the intent, and calls the executor. After an interruption, the next worker checks the executor’s record before deciding whether to act. |
+| Evaluator | Compares the agent’s report with tool calls, actual effects, and the state of the exchange. A plausible explanation is not enough to pass. |
+
+```mermaid
+flowchart LR
+    A[Alert and runbook] --> I[Investigate]
+    M[Clue from a previous shift] --> I
+    I -->|Evidence missing| H[Hand off to operator]
+    I -->|Evidence identifies one instance| G[Check rights and get approval]
+    G --> C[Save intent to disk]
+    C --> E[Executor records restart and receipt]
+    C -->|Worker interrupted| R[Replacement checks executor record]
+    R -->|Original receipt found| V[Read service metrics again]
+    R -->|Record unavailable| H
+    E --> V
+    V -->|Three healthy readings| F[Report recovery]
+    V -->|Still degraded| H
+```
+
+## Run the demo
+
+Allow about five minutes after setup. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first. The initial setup downloads dependencies. The demo uses local data and needs no `.env`, API key, or paid model calls.
 
 ```sh
 git clone https://github.com/jpboliv/meridian-project.git
 cd meridian-project
-```
-
-Se recebeu uma cópia completa, abra um terminal na pasta que contém `pyproject.toml`. Execute os comandos seguintes nessa pasta.
-
-```sh
 uv sync --locked --group dev
 uv run --locked streamlit run projects/course-02-agentic-ai/first_line/lab.py
 ```
 
-1. **Caso A: reinício verificado.** No laboratório, selecione A e carregue em **Executar caso**. Só a `order-gateway-2` tem consumo de memória elevado. Procure a aprovação `APR-001`, o recibo `ACT-001` e as três leituras seguintes. O recibo prova que houve um reinício. As leituras mostram que o serviço recuperou. Resultado: 12/12 verificações, um efeito.
-2. **Caso B: faltam medições.** Selecione B e carregue novamente em **Executar caso**. O monitor da instância 1 não responde após duas tentativas. A instância 2 ficou por medir. O agente pede ao operador medições das duas, sem declarar recuperação. Resultado: 11/11 verificações, zero efeitos. Pare o laboratório com `Ctrl+C`.
-3. **M3: interrupção depois do reinício.** Execute o comando abaixo. Na linha `applied restart, receipt not saved`, o primeiro trabalhador para antes de guardar o recibo. O substituto encontra o recibo original e confirma a recuperação: `recovered, 1 effect(s)`. Compare com `link degrades after the restart`: há um recibo, mas as leituras não confirmam recuperação. O resultado é `needs_operator, 1 effect(s)`.
+If you downloaded an archive, start in the directory containing `pyproject.toml` and run the last two commands. In the lab, the Portuguese button **Executar caso** means **Run case**.
 
-```sh
-uv run --locked python projects/course-02-agentic-ai/team/m3_demo.py --part resume --summary
-```
+1. **A: verify a restart.** Select A and run the case. Only `order-gateway-2` has high memory use. Find approval `APR-001`, receipt `ACT-001`, and the next three health readings. The receipt shows that the restart happened. The readings show that it worked. Expect 12/12 checks and one effect.
+2. **B: hand off missing evidence.** Select B and run it. The monitor times out twice on instance 1. Nobody measured instance 2. The agent asks the operator for readings from both. Expect 11/11 checks and zero effects. Stop the lab with `Ctrl+C`.
+3. **M3: interrupt the worker.** From the same directory, run:
 
-## Como funciona
+   ```sh
+   uv run --locked python projects/course-02-agentic-ai/team/m3_demo.py --part resume --summary
+   ```
 
-```mermaid
-flowchart TD
-    A[Alerta e runbook] --> I[Investigação]
-    M[Pista do turno anterior com fonte] --> I
-    I --> S1[M3: especialista de aplicação lê tickets, alterações e logs]
-    I --> S2[M3: especialista de infraestrutura lê métricas e ligações]
-    S1 --> L[Líder integra resultados e verifica fontes]
-    S2 --> L
-    L -->|Dados insuficientes ou contraditórios| H[Passar ao operador com a evidência em falta]
-    L -->|Alvo sustentado por leituras atuais| P[Verificar permissões e obter aprovação para esse alvo]
-    P --> C[Guardar intenção em disco]
-    C --> E[Executor aplica o reinício e regista o recibo]
-    C -->|Após interrupção| R[Substituto consulta o registo do executor]
-    R -->|Recibo encontrado| V[Medir a saúde do serviço]
-    E --> V
-    V -->|Três leituras saudáveis| F[Confirmar recuperação]
-    V -->|Recuperação não confirmada| H
-```
+   Compare `applied restart, receipt not saved` with `link degrades after the restart`. Both record one restart. The first ends in `recovered`; the second ends in `needs_operator`. A receipt is not a reason to restart again or declare the service healthy.
 
-O curso forneceu o [simulador](meridian/), os servidores MCP que expõem as ferramentas, os runbooks, o aprovador, o executor e o avaliador de base. O projeto acrescentou o [ciclo de decisão, as políticas de memória e acesso e os casos de avaliação](projects/course-02-agentic-ai/first_line/). Acrescentou também a [coordenação dos especialistas e a retoma](projects/course-02-agentic-ai/team/). O avaliador compara o relatório com as chamadas e os efeitos no simulador depois de cada caso.
+## What the evaluations showed
 
-## O que os resultados permitem concluir
-
-| Marco | Evidência | Decisão ou limite |
+| Question | Result | Engineering decision |
 |---|---|---|
-| [M1: primeira linha](https://github.com/jpboliv/meridian-project/tree/M1) | Na [linha de base com modelo](projects/course-02-agentic-ai/first_line/live-baseline-m1.6-2026-11-22.jsonl), `gpt-6-luna` passou 9/15 execuções na m1.6. Na m1.7, passaram [5/5 casos programados](projects/course-02-agentic-ai/first_line/offline-traces-m1.7.jsonl). | O segundo resultado verifica as regras do programa. Não mede uma melhoria do modelo. |
-| [M2: memória entre turnos](https://github.com/jpboliv/meridian-project/tree/M2) | Nos [três pares em que o modelo recebeu o lembrete](projects/course-02-agentic-ai/first_line/public-results-m2-2026-11-23/reminder-ledger.jsonl), fez as mesmas seis leituras pela mesma ordem. | Mantivemos o runbook sem lembrete por defeito. A memória tem fonte, validade, correção e controlo de acesso. É partilhada entre turnos no mesmo processo e perde-se quando este termina. |
-| [M3: coordenação e retoma](https://github.com/jpboliv/meridian-project/tree/M3) | Nos [casos A e D](projects/course-02-agentic-ai/team/offline-traces-m3.jsonl), a equipa chegou ao mesmo resultado que o agente sozinho, com mais uma chamada por caso. | O líder e os dois especialistas seguem regras programadas. Na retoma, a intenção está em disco. O simulador e o registo do executor continuam em memória. Se o registo deixa de ser fiável, o substituto chama o operador. |
+| [M1](https://github.com/jpboliv/meridian-project/tree/M1): Can the agent finish an incident? | The [live m1.6 baseline](projects/course-02-agentic-ai/first_line/live-baseline-m1.6-2026-11-22.jsonl) passed 9/15 runs. In one failure, the model repeatedly read a degraded link but never cited it in its handoff. | When refreshing stale samples yields no new evidence, code now ends the loop and writes the handoff. [Five scripted m1.7 cases](projects/course-02-agentic-ai/first_line/offline-traces-m1.7.jsonl) passed. That tests the rule, not an improvement in model performance. |
+| [M2](https://github.com/jpboliv/meridian-project/tree/M2): Does a reminder save work? | All [12 live runs](projects/course-02-agentic-ai/first_line/public-results-m2-2026-11-23/reminder-ledger.jsonl) passed. In the three pairs where the model saw the reminder, it made the same six reads in the same order. | Keep the runbook alone by default. When a shift does save a clue, record its source, check who can read it, and withdraw it if later evidence contradicts it. |
+| M2: Does prompt caching reduce cost here? | All [45 live runs](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-live-m2-results) passed. All 157 requests fell below the provider’s 1,024-token minimum. It reported no cache reads or writes. | Do not attribute cost differences to caching. This workload could not measure the benefit of a cache hit. |
+| [M3](https://github.com/jpboliv/meridian-project/tree/M3): What does a team add? | In [cases A and D](projects/course-02-agentic-ai/team/offline-traces-m3.jsonl), the scripted team reached the single agent’s decision with one extra tool call per case. In M, conflicting findings prompted a fresh link check before any restart. | Give specialists read-only access. Keep approval and dispatch with the lead. |
 
-Na [experiência de cache](projects/course-02-agentic-ai/docs/experiments.md#2026-11-23-live-m2-results), os 157 pedidos ficaram abaixo do mínimo de 1 024 tokens de entrada. O fornecedor registou zero leituras e escritas na cache. A experiência não mediu a poupança de um pedido servido pela cache.
+The recovery demo covers worker replacement within a running simulator. The checkpoint lives on disk. Shift memory, executor receipts, and the executor’s ledger live in process memory. If the ledger disappears, the replacement hands the incident to an operator. A [later two-interruption experiment](projects/course-02-agentic-ai/post_release/README.md) found a separate bug: after 14 of 32 calls, the third worker inherited 19 calls instead of 18.
 
-Para consultar as políticas e repetir outras experiências, use o [guia técnico do projeto](projects/course-02-agentic-ai/README.md) e o [registo das experiências](projects/course-02-agentic-ai/docs/experiments.md). Para executar os testes locais do projeto e do simulador:
+For the full evaluation suite, run:
 
 ```sh
 uv run --locked python -m pytest -q projects/course-02-agentic-ai meridian/tests
 ```
 
-## Utilização de IA
+The [technical guide](projects/course-02-agentic-ai/README.md) links to the case inputs, policy specifications, and reproduction commands.
 
-Claude Code, Codex e OpenCode ajudaram na implementação, nos testes, na revisão e na documentação. O responsável pelo projeto decidiu as políticas e autorizou as execuções pagas. A [declaração detalhada](projects/course-02-agentic-ai/docs/relatorio.md#utilização-de-ia) distingue o uso destes assistentes das experiências que usaram um modelo durante o incidente.
+## Use of AI
+
+I used Claude Code, Codex, and OpenCode for implementation, tests, review, and documentation. I made the policy decisions and authorized the paid runs. The model used *inside* the agent for the reported M1 baseline and M2 live studies was `gpt-6-luna`.

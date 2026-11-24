@@ -1,5 +1,7 @@
 # Current focus
 
+24 November, [delivery #20](https://github.com/jpboliv/meridian-project/issues/20): the [README](README.md) and [one-page case study](projects/course-02-agentic-ai/docs/meridian-interativo.html) now introduce Meridian in English. Both credit the [original course repository](https://github.com/luisnoronha/gen-ai-course) and distinguish its simulator and base evaluator from the project’s decision rules and evaluations.
+
 24 November, [delivery #20](https://github.com/jpboliv/meridian-project/issues/20): the [root README](README.md) now opens with the three-milestone report and the offline A, B and M3 resume walkthrough. The lab checks and resume command passed from a fresh local clone at `3d98c73`. The README includes the AI-use disclosure.
 
 24 November, [post-release test: a second interruption](projects/course-02-agentic-ai/post_release/README.md). After 14 of 32 tool calls, the third worker received 19 rather than the remaining 18. Saving the current balance with the receipt fixes the count. In A the third worker verified recovery; in N it handed over. Each case had one restart. The monitor now reports unknown effects on M3 line 15: the new simulator’s empty audit cannot account for the original ledger’s completed restart. See [PR #44](https://github.com/jpboliv/meridian-project/pull/44) for the trace monitor, evidence and limits.

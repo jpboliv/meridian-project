@@ -9,11 +9,11 @@ It grows in three milestones:
 2. Production On-Call Agent (sessions 4–6)
 3. 24/7 Incident Response Center (sessions 7–9)
 
-**Latest evidence:** the [M2 live results and offline reproduction commands](docs/experiments.md#2026-11-23-live-m2-results) cover 12 paired-study slots on handover reminders and 45 on provider caching. The reminder did not save investigative reads. No cache hits or writes were reported in the timestamp/cache study. The M1 walkthrough below remains usable without a provider key.
+For an overview of all three milestones, read the [case study](docs/meridian-interativo.html) or run the [offline demo](../../README.md#run-the-demo). This guide covers individual cases, live-run settings, and trace reproduction.
 
 Start with the [project goals](docs/project.md) and [reference incident](docs/reference-incident.md). Follow the [roadmap](../../ROADMAP.md) for milestone outcomes.
 
-For the class presentation, use [the short report in Portuguese](docs/relatorio.md): the context-reuse question, course versus project work, the architecture, one evidence table with the `gateway-m1.7` scripted traces and the [15-run public live baseline](docs/experiments.md#2026-11-22-public-m1-baseline-gateway-m16) (9/15 passed), and what remains unmeasured. The current harness is `gateway-m1.7`, an [offline follow-up](docs/experiments.md#2026-11-23-offline-follow-up-to-the-baseline-failures-gateway-m17) to those failures with no live result yet. Its scripted outcomes match m1.6. The report ends with a [verification route](docs/relatorio.md#verificar-no-seu-computador) that needs no `.env` or API key: run the lab, regenerate the scripted traces and compare them byte for byte, and analyse the saved live baseline.
+For the original M1 release, the [archived Portuguese walkthrough](docs/relatorio.md#verificar-no-seu-computador) reproduces its five scripted traces and analyzes the [15-run live baseline](docs/experiments.md#2026-11-22-public-m1-baseline-gateway-m16) without a provider key.
 
 ## Run the first-line cases
 
@@ -95,7 +95,7 @@ Choose one public case, A–E, and press **Executar caso**. The page runs that c
 
 ## Design index
 
-The [presentation report](docs/relatorio.md) replaces the generated HTML report. The [review introduction](docs/design-review.md) keeps the 19 November pitch and the Helloform reasoning. The specifications below contain the detailed contracts.
+The [review introduction](docs/design-review.md) preserves the original course pitch and design rationale. The specifications below contain the detailed contracts.
 
 The [course references](references/) contain the project brief and the first session's slides. The [19 November snapshot](docs/issue-snapshot.md) preserves the discussions from that date. Use this repository’s [issue tracker](https://github.com/jpboliv/meridian-project/issues) for current work.
 
