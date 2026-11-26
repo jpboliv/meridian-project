@@ -2,7 +2,7 @@
 
 Draft for owner review · [Issue 22](https://github.com/jpboliv/meridian-project/issues/22).
 
-M1 delivery snapshot for [#20](https://github.com/jpboliv/meridian-project/issues/20): the [report for Luís](relatorio.md), with a [verification route](relatorio.md#verificar-no-seu-computador) that needs no API key.
+The [final report for Luís](meridian-interactive.html) covers all three milestones. The [root README](../../../README.md#run-the-demo) walks through A, B and M3 worker resume without an API key.
 
 The user is the on-call engineer at Meridian, a simulated stock exchange. The engineer needs to know what happened, whether to act, and whether the service recovered. The project asks when an earlier shift saves investigation time and when it points the next shift at the wrong fix.
 
@@ -27,8 +27,10 @@ Our course deep dive is prompt caching, evaluated on verified incident outcomes.
 
 In a separate handover experiment, compare a fresh agent with and without the same sourced reminder. Both get the full runbook, which already calls for per-instance checks. Count reads to a correct decision, wrong targets, and the cost of saving and retrieving the reminder. A tie counts as a result. The correction case asks a different question: once the restart story proves wrong, what advice reaches the next operator?
 
-Protect the M3 demonstration: combine two specialist findings, detect a failed handoff, and resume after an applied action without repeating it. Use 29 November for a clean-clone rehearsal. Caching tool results, prompt fingerprints, summary-cost comparisons, model routing, and animation can follow if time permits. No delivery milestone depends on them.
+Protect the M3 demonstration: combine two specialist findings, detect a failed handoff, and resume after an applied action without repeating it. Caching tool results, prompt fingerprints, summary-cost comparisons, model routing, and animation can follow if time permits. No delivery milestone depends on them.
 
-For delivery, tag the three milestone versions. Provide a proposal, flow diagram, dependency lock, and secret-free `.env.example`. Use the README to explain setup, policies, limitations, and AI assistance. Include each case, its expected and actual result, the model version, limits, and a trace. Rehearse a verified fix, a controlled failure, and a resume from a clean clone.
+For delivery, tag the three milestone versions. Provide a proposal, flow diagram, dependency lock, and secret-free `.env.example`. Use the README to explain setup, policies, limitations, and AI assistance. Include each case, its expected and actual result, the model version, limits, and a trace.
 
-The submission deadline is 30 November 2026 at 23:59 Lisbon time (`Europe/Lisbon`). The internal finish target is 29 November at 18:00 in the same time zone.
+The [26 November rehearsal](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7196694101) passed from a fresh clone at `8bed155`. A recovered with one restart (12/12), B handed over with zero effects (11/11), and the two M3 resume cases ended in recovery and handover with one restart each. All 300 tests passed.
+
+Deliver the exact handoff copy to Luís, confirm he can access it, and record delivery in [#20](https://github.com/jpboliv/meridian-project/issues/20). The submission deadline is 30 November 2026 at 23:59 Lisbon time (`Europe/Lisbon`).
