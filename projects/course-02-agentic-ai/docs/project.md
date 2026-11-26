@@ -2,7 +2,7 @@
 
 Draft for owner review · [Issue 22](https://github.com/jpboliv/meridian-project/issues/22).
 
-The [final report for Luís](meridian-interactive.html) covers all three milestones. The [root README](../../../README.md#run-the-demo) walks through A, B and M3 worker resume without an API key.
+The [Portuguese report for Luís](meridian-interativo.html) covers all three milestones. The [English case study](meridian-interactive.html) is also available. The [root README](../../../README.md#run-the-demo) walks through A, B and M3 worker resume without an API key.
 
 The user is the on-call engineer at Meridian, a simulated stock exchange. The engineer needs to know what happened, whether to act, and whether the service recovered. The project asks when an earlier shift saves investigation time and when it points the next shift at the wrong fix.
 
@@ -31,6 +31,6 @@ Protect the M3 demonstration: combine two specialist findings, detect a failed h
 
 For delivery, tag the three milestone versions. Provide a proposal, flow diagram, dependency lock, and secret-free `.env.example`. Use the README to explain setup, policies, limitations, and AI assistance. Include each case, its expected and actual result, the model version, limits, and a trace.
 
-The [26 November rehearsal](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7196694101) passed from a fresh clone at `8bed155`. A recovered with one restart (12/12), B handed over with zero effects (11/11), and the two M3 resume cases ended in recovery and handover with one restart each. All 300 tests passed.
+The [26 November rehearsal](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7196694101) passed from a fresh clone at `8bed155`. In Streamlit AppTest, A recovered with one restart (12/12) and B handed over with zero effects (11/11). The two M3 resume cases ended in recovery and handover with one restart each. All 300 tests passed.
 
 Deliver the exact handoff copy to Luís, confirm he can access it, and record delivery in [#20](https://github.com/jpboliv/meridian-project/issues/20). The submission deadline is 30 November 2026 at 23:59 Lisbon time (`Europe/Lisbon`).

@@ -2,7 +2,7 @@
 
 [26 November delivery rehearsal](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7196694101). In a fresh authenticated clone at `8bed155`, Streamlit AppTest showed A recovering after one restart (12/12) and B handing over to the operator with zero effects (11/11). Both M3 resume cases recovered the original receipt with one restart each. One verified recovery and the other handed over after the link degraded. The README test command passed all 300 tests. The rehearsal ran without an API key or paid calls.
 
-The [final report for Luís](projects/course-02-agentic-ai/docs/meridian-interactive.html) covers all three milestones. The [root README](README.md) provides the offline walkthrough, results, course attribution and AI-use disclosure.
+The [Portuguese report for Luís](projects/course-02-agentic-ai/docs/meridian-interativo.html) covers all three milestones. The [English case study](projects/course-02-agentic-ai/docs/meridian-interactive.html) is also available. The [root README](README.md) provides the offline walkthrough, results, course attribution and AI-use disclosure.
 
 Deliver the exact handoff copy to Luís, confirm he can access it, and record delivery in [#20](https://github.com/jpboliv/meridian-project/issues/20). The deadline is 30 November 2026 at 23:59 Lisbon time.
 
