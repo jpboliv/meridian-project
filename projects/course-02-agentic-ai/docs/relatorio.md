@@ -1,17 +1,17 @@
 # Meridian: o agente de primeira linha
 
-Projeto Agentic AI · o primeiro marco foi aceite e está identificado pela [tag `M1`](https://github.com/jpboliv/meridian-project/tree/M1). O [ZIP para revisão](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7100953195) foi testado antes da criação da tag e contém o mesmo código.
+Projeto Agentic AI · registo do M1, com notas sobre M2 e M3. O primeiro marco foi aceite e está identificado pela [tag `M1`](https://github.com/jpboliv/meridian-project/tree/M1). O [ZIP de revisão do M1](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7100953195) foi testado antes da criação da tag e contém o mesmo código.
 
-**Para verificar por si, sem chave de API nem custos:** [Verificar no seu computador](#verificar-no-seu-computador).
+**Entrega completa dos três marcos.** [Relatório breve em português](meridian-interativo.html) · [Estudo de caso em inglês](meridian-interactive.html) · [Guia da demonstração no README](../../../README.md#run-the-demo), sem chave de API nem custos.
 
-O [estudo de caso em inglês](meridian-interactive.html) reúne as decisões e os resultados dos três marcos numa página. Abre no navegador sem rede nem JavaScript.
+**Revisão histórica do M1.** [Verificar no seu computador](#verificar-no-seu-computador).
 
 ## Em resumo
 
 - **Problema e utilizador.** Um alerta diz «o gateway de ordens está lento». O engenheiro de serviço (on-call) da Meridian, uma bolsa simulada, precisa de saber o que aconteceu, se deve agir e se o serviço recuperou. Reiniciar a instância errada, ou afirmar uma recuperação sem medir, é pior do que passar o caso ao operador com a evidência certa.
 - **Estado.** Os três marcos estão concluídos. No M2, o turno seguinte recebe pistas com fonte e verifica se ainda se aplicam. No [M3](https://github.com/jpboliv/meridian-project/tree/M3), dois especialistas investigam o alerta. Se o agente que pediu o reinício parar, outro consulta o recibo antes de decidir o que fazer.
 - **Resultado.** Na versão marcada, `gateway-m1.7`, passaram 119 testes offline e os cinco casos públicos com decisões programadas. Os registos dos cinco casos foram reproduzidos byte a byte. Na linha de base arquivada, `gateway-m1.6`, passaram 9 de 15 execuções com o modelo real. Os quatro reinícios foram todos aprovados pelo aprovador on-call simulado e feitos na instância certa, e não houve outros efeitos.
-- **Verificação.** Este percurso foi [verificado num clone limpo](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7100207276), sem `.env` nem chave.
+- **Verificação do M1.** O percurso foi [verificado num clone limpo a 23 de novembro](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7100207276), sem `.env` nem chave.
 - **Resultado do M2.** Nas 12 execuções com e sem lembrete, passaram todos os casos. Em C, o modelo fez as mesmas seis leituras, pela mesma ordem, nas duas versões. Em D, a condição do lembrete não se verificou. Mantemos o runbook sem lembrete por defeito. Nas 45 execuções da comparação de cache também passaram todos os casos; o fornecedor registou zero leituras e zero escritas na cache. O custo estimado das duas experiências foi de 0,019345 USD.
 
 ## Pergunta e proposta
@@ -99,11 +99,13 @@ Em A3 ([execução 11](../first_line/live-baseline-m1.6-2026-11-22.jsonl#L11)), 
 - Retoma após perda do simulador inteiro. No [teste do M3](experiments.md#2026-11-23-m3-worker-resume-offline), o simulador continuou a funcionar: o agente substituto encontrou o recibo ACT-001, verificou três leituras novas e não repetiu o reinício. As decisões foram programadas.
 - Limites: as horas das amostras não têm data, por isso a regra de E só compara amostras do mesmo dia simulado. Os casos reservados não foram executados.
 
-O ensaio completo a partir de um clone limpo (sucesso, falha controlada e retoma) está marcado para 29 de novembro. A entrega é a 30 de novembro de 2026, às 23:59 de Lisboa.
+O ensaio de entrega decorreu a 26 de novembro de 2026, num clone limpo de `8bed155`, sem chave de API nem chamadas pagas. A recuperou após um reinício (12/12), B passou o caso ao operador sem efeitos (11/11) e as duas retomas do M3 recuperaram o recibo original com um reinício cada. Uma confirmou a recuperação e a outra passou o caso ao operador após a degradação da ligação. Passaram os 300 testes. [Registo do ensaio na #20](https://github.com/jpboliv/meridian-project/issues/20#issuecomment-7196694101).
+
+Falta enviar a Luís a cópia exata da entrega, confirmar que tem acesso e registar a entrega na [#20](https://github.com/jpboliv/meridian-project/issues/20). O prazo é 30 de novembro de 2026, às 23:59 de Lisboa.
 
 ## Verificar no seu computador
 
-Há dois caminhos: o ZIP `Meridian-M1`, recebido diretamente, ou um clone Git do repositório privado. O ZIP cobre todo o percurso de revisão do M1; as ligações para o tracker e o histórico privados são opcionais.
+Este percurso reproduz a versão verificada do M1 a partir do ZIP histórico `Meridian-M1` ou de um clone Git do repositório privado. O ZIP cobre todo o percurso de revisão do M1. As ligações para o tracker e o histórico privados são opcionais.
 
 **Precisa de:** [uv](https://docs.astral.sh/uv/getting-started/installation/) e uma shell POSIX (bash ou zsh). Para o clone, também Git e acesso de leitura autorizado e autenticado ao repositório privado; basta o gestor de credenciais do Git ou o início de sessão habitual da organização. A Internet só é necessária no passo 1, para descarregar as dependências e, no clone, para clonar; a análise corre sem rede. **Não precisa de** `.env`, chave de API, serviços alojados, ficheiros do formador nem execuções pagas. Com o ZIP, também não precisa de conta GitHub, acesso ao repositório nem chave do projeto.
 
@@ -125,7 +127,7 @@ cd meridian-project
 uv sync --locked --group dev
 ```
 
-Os comandos seguintes correm na raiz do repositório. O código desta fotografia é o commit `b22203f8b9193477df838a66dfd6ee2ace9bd22c`; este relatório só mudou documentação depois dele. Para o confirmar:
+Os comandos seguintes correm na raiz do repositório. A versão verificada do M1 corresponde ao commit `b22203f8b9193477df838a66dfd6ee2ace9bd22c`. Para verificar se o código coincide:
 
 ```sh
 git diff --quiet b22203f8b9193477df838a66dfd6ee2ace9bd22c HEAD -- meridian projects/course-02-agentic-ai/first_line pyproject.toml uv.lock && echo "código igual ao de b22203f"
